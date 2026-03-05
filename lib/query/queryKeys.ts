@@ -1,0 +1,67 @@
+export const queryKeys = {
+  tenants: {
+    all: ["tenants"] as const,
+    lists: () => [...queryKeys.tenants.all, "list"] as const,
+    list: (filters: string) => [...queryKeys.tenants.lists(), { filters }] as const,
+    details: () => [...queryKeys.tenants.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.tenants.details(), id] as const,
+  },
+  branches: {
+    all: ["branches"] as const,
+    lists: () => [...queryKeys.branches.all, "list"] as const,
+    list: (filters: string) => [...queryKeys.branches.lists(), { filters }] as const,
+    details: () => [...queryKeys.branches.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.branches.details(), id] as const,
+  },
+  plans: {
+    all: ["plans"] as const,
+    lists: () => [...queryKeys.plans.all, "list"] as const,
+    list: (filters: string) => [...queryKeys.plans.lists(), { filters }] as const,
+    details: () => [...queryKeys.plans.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.plans.details(), id] as const,
+  },
+  subscriptions: {
+    all: ["subscriptions"] as const,
+    lists: () => [...queryKeys.subscriptions.all, "list"] as const,
+    list: (filters: string) => [...queryKeys.subscriptions.lists(), { filters }] as const,
+    details: () => [...queryKeys.subscriptions.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.subscriptions.details(), id] as const,
+  },
+  users: {
+    all: ["users"] as const,
+    lists: () => [...queryKeys.users.all, "list"] as const,
+    list: (filters: string) => [...queryKeys.users.lists(), { filters }] as const,
+    details: () => [...queryKeys.users.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.users.details(), id] as const,
+  },
+  roles: {
+    all: ["roles"] as const,
+    lists: () => [...queryKeys.roles.all, "list"] as const,
+    list: (filters: string) => [...queryKeys.roles.lists(), { filters }] as const,
+    details: () => [...queryKeys.roles.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.roles.details(), id] as const,
+  },
+  invoices: {
+    all: ["invoices"] as const,
+    lists: () => [...queryKeys.invoices.all, "list"] as const,
+    list: (filters: string) => [...queryKeys.invoices.lists(), { filters }] as const,
+    details: () => [...queryKeys.invoices.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.invoices.details(), id] as const,
+  },
+  payments: {
+    all: ["payments"] as const,
+    lists: () => [...queryKeys.payments.all, "list"] as const,
+    list: (filters: string) => [...queryKeys.payments.lists(), { filters }] as const,
+    details: () => [...queryKeys.payments.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.payments.details(), id] as const,
+  },
+  currencies: {
+    all: ["currencies"] as const,
+    lists: () => [...queryKeys.currencies.all, "list"] as const,
+    list: (filters: string) => [...queryKeys.currencies.lists(), { filters }] as const,
+  },
+  settings: {
+    all: ["settings"] as const,
+    lists: () => [...queryKeys.settings.all, "list"] as const,
+  },
+}
