@@ -1,0 +1,279 @@
+"use client"
+
+import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Switch } from "@/components/ui/switch"
+import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
+import { PageHeader } from "@/components/shared/page-header"
+import { toast } from "@/components/shared/feedback/use-toast"
+import { useSubscription, useUpdateSubscription } from "../hooks"
+import { useTenants } from "@/features/tenants/hooks"
+import { usePlans } from "@/features/plans/hooks"
+import { subscriptionSchema } from "../schemas"
+import { z } from "zod"
+
+interface EditSubscriptionPageProps {
+  subscriptionId: string
+}
+
+export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPageProps) {
+  const router = useRouter()
+  const { data: subscription, isLoading } = useSubscription(subscriptionId)
+  const { data: tenants = [] } = useTenants()
+  const { data: plans = [] } = usePlans()
+  const updateMutation = useUpdateSubscription()
+
+  const form = useForm<z.infer<typeof subscriptionSchema>>({
+    resolver: zodResolver(subscriptionSchema),
+    values: subscription
+      ? {
+          tenantId: subscription.tenantId,
+          planId: subscription.planId,
+          status: subscription.status,
+          startDate: subscription.startDate,
+          currentPeriodStart: subscription.currentPeriodStart,
+          currentPeriodEnd: subscription.currentPeriodEnd,
+          canceledAt: subscription.canceledAt,
+          trialStart: subscription.trialStart,
+          trialEnd: subscription.trialEnd,
+          billingCurrency: subscription.billingCurrency,
+          unitPrice: subscription.unitPrice,
+          discountAmount: subscription.discountAmount,
+          discountPercent: subscription.discountPercent,
+          autoRenew: subscription.autoRenew,
+          cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+          notes: subscription.notes || "",
+        }
+      : undefined,
+  })
+
+  const onSubmit = (data: z.infer<typeof subscriptionSchema>) => {
+    updateMutation.mutate(
+      { id: subscriptionId, updates: data },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Success",
+            description: "Subscription updated successfully",
+          })
+          router.push(`/tenant-subscriptions/${subscriptionId}`)
+        },
+        onError: () => {
+          toast({
+            title: "Error",
+            description: "Failed to update subscription",
+            variant: "destructive",
+          })
+        },
+      }
+    )
+  }
+
+  if (isLoading) {
+    return <div className="text-center py-8">Loading...</div>
+  }
+
+  if (!subscription) {
+    return <div className="text-center py-8">Subscription not found</div>
+  }
+
+  return (
+    <>
+      <PageHeader
+        title="Edit Subscription"
+        subtitle={`Subscription ${subscription.subscriptionId}`}
+        breadcrumbs={[
+          { label: "Plans & Subscriptions", href: "/plans" },
+          { label: "Tenant Subscriptions", href: "/tenant-subscriptions" },
+          { label: "Edit Subscription" },
+        ]}
+      />
+
+      <GlassCard variant="default" className="max-w-4xl">
+        <GlassCardHeader>
+          <GlassCardTitle>Subscription Information</GlassCardTitle>
+        </GlassCardHeader>
+        <GlassCardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="tenantId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tenant</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select tenant" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {tenants.map((tenant) => (
+                            <SelectItem key={tenant.id} value={tenant.id}>
+                              {tenant.tenantName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="planId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Plan</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select plan" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {plans.map((plan) => (
+                            <SelectItem key={plan.id} value={plan.id}>
+                              {plan.planName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Active">Active</SelectItem>
+                          <SelectItem value="Expired">Expired</SelectItem>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="TRIALING">TRIALING</SelectItem>
+                          <SelectItem value="PAST_DUE">PAST_DUE</SelectItem>
+                          <SelectItem value="CANCELED">CANCELED</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="billingCurrency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Billing Currency</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter currency code" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="unitPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Unit Price</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Enter unit price"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="autoRenew"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Auto Renew</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Enter notes (optional)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-border/30">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.back()}
+                  size="lg"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" size="lg" disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </GlassCardContent>
+      </GlassCard>
+    </>
+  )
+}

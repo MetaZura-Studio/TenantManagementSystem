@@ -1,17 +1,12 @@
 import { useStore } from "./store"
-import type {
-  Tenant,
-  Branch,
-  Plan,
-  TenantSubscription,
-  User,
-  Role,
-  Invoice,
-  InvoiceLine,
-  Payment,
-  CurrencyRate,
-} from "./types"
-import { MODULES } from "./types"
+import type { Tenant } from "@/features/tenants/types"
+import type { Branch } from "@/features/branches/types"
+import type { Plan } from "@/features/plans/types"
+import type { TenantSubscription } from "@/features/tenant-subscriptions/types"
+import type { User } from "@/features/users/types"
+import type { Role } from "@/features/roles/types"
+import type { CurrencyRate } from "@/features/currency/types"
+import { MODULES } from "@/types"
 
 export function seedData() {
   const store = useStore.getState()

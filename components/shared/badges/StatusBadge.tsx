@@ -1,6 +1,10 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { TenantStatus, SubscriptionStatus, UserStatus, PaymentStatus, InvoiceStatus, PlanStatus } from "@/lib/types"
+import type { TenantStatus, SubscriptionStatus } from "@/features/tenants/types"
+import type { UserStatus } from "@/features/users/types"
+import type { PaymentStatus } from "@/features/payments/types"
+import type { InvoiceStatus } from "@/features/invoices/types"
+import type { PlanStatus } from "@/features/plans/types"
 
 interface StatusBadgeProps {
   status: TenantStatus | SubscriptionStatus | UserStatus | PaymentStatus | InvoiceStatus | PlanStatus | string
