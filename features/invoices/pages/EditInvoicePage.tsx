@@ -27,6 +27,7 @@ import { toast } from "@/components/shared/feedback/use-toast"
 import { useInvoice, useUpdateInvoice } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { useSubscriptions } from "@/features/tenant-subscriptions/hooks"
+import { useCurrencies } from "@/features/currency/hooks"
 import { invoiceSchema } from "../schemas"
 import { z } from "zod"
 
@@ -39,6 +40,7 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
   const { data: invoice, isLoading } = useInvoice(invoiceId)
   const { data: tenants = [] } = useTenants()
   const { data: subscriptions = [] } = useSubscriptions()
+  const { data: currencies = [] } = useCurrencies()
   const updateMutation = useUpdateInvoice()
 
   const form = useForm<z.infer<typeof invoiceSchema>>({
@@ -231,9 +233,20 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter currency code" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {currencies.map((c) => (
+                            <SelectItem key={c.id} value={c.currencyCode}>
+                              {c.currencyCode} - {c.currencyName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

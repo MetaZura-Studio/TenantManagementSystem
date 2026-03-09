@@ -12,10 +12,13 @@ export const branchesApi = {
     await delay(200)
     return useStore.getState().branches.find((b) => b.id === id)
   },
-  create: async (branch: Omit<Branch, "id" | "createdAt" | "updatedAt">): Promise<Branch> => {
+  create: async (
+    branch: Omit<Branch, "id" | "createdAt" | "updatedAt"> & { branchStatus?: Branch["branchStatus"] }
+  ): Promise<Branch> => {
     await delay(400)
     const newBranch: Branch = {
       ...branch,
+      branchStatus: branch.branchStatus ?? "Active",
       id: `branch-${Date.now()}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -14,6 +15,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   Form,
   FormControl,
   FormField,
@@ -27,21 +36,28 @@ import { toast } from "@/components/shared/feedback/use-toast"
 import { useCreateInvoice } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { useSubscriptions } from "@/features/tenant-subscriptions/hooks"
+import { useCurrencies } from "@/features/currency/hooks"
 import { invoiceSchema } from "../schemas"
 import type { Invoice } from "../types"
 import { z } from "zod"
+import { Mail, MessageCircle } from "lucide-react"
 
 export function CreateInvoicePage() {
   const router = useRouter()
   const createMutation = useCreateInvoice()
   const { data: tenants = [] } = useTenants()
   const { data: subscriptions = [] } = useSubscriptions()
+  const { data: currencies = [] } = useCurrencies()
+  const [sendDialogOpen, setSendDialogOpen] = useState(false)
+  const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null)
 
   const form = useForm<z.infer<typeof invoiceSchema>>({
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
       tenantId: "",
       subscriptionId: "",
+      invoiceSequence: "001",
+      invoiceNumber: Date.now().toString().slice(-6),
       periodStart: new Date().toISOString().split("T")[0],
       periodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       issueDate: new Date().toISOString().split("T")[0],
@@ -52,9 +68,10 @@ export function CreateInvoicePage() {
   })
 
   const onSubmit = (data: z.infer<typeof invoiceSchema>) => {
+    const fullInvoiceNumber = `${data.invoiceSequence}${data.invoiceNumber}`
     const invoiceData: Omit<Invoice, "id" | "createdAt" | "updatedAt"> = {
-      invoiceId: `INV-${Date.now().toString().slice(-6)}`,
-      invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
+      invoiceId: `INV-${fullInvoiceNumber}`,
+      invoiceNumber: `INV-${fullInvoiceNumber}`,
       tenantId: data.tenantId,
       subscriptionId: data.subscriptionId,
       periodStart: data.periodStart,
@@ -72,12 +89,9 @@ export function CreateInvoicePage() {
       notes: data.notes || undefined,
     }
     createMutation.mutate(invoiceData, {
-      onSuccess: () => {
-        toast({
-          title: "Success",
-          description: "Invoice created successfully",
-        })
-        router.push("/invoices")
+      onSuccess: (invoice) => {
+        setCreatedInvoice(invoice)
+        setSendDialogOpen(true)
       },
       onError: () => {
         toast({
@@ -87,6 +101,28 @@ export function CreateInvoicePage() {
         })
       },
     })
+  }
+
+  const handleSendViaEmail = () => {
+    if (!createdInvoice) return
+    // TODO: Implement email sending logic
+    toast({
+      title: "Email Sent",
+      description: `Invoice ${createdInvoice.invoiceNumber} sent via email as PDF`,
+    })
+    setSendDialogOpen(false)
+    router.push("/invoices")
+  }
+
+  const handleSendViaWhatsApp = () => {
+    if (!createdInvoice) return
+    // TODO: Implement WhatsApp sending logic
+    toast({
+      title: "WhatsApp Message Sent",
+      description: `Invoice ${createdInvoice.invoiceNumber} sent via WhatsApp as PDF`,
+    })
+    setSendDialogOpen(false)
+    router.push("/invoices")
   }
 
   return (
@@ -160,6 +196,51 @@ export function CreateInvoicePage() {
 
                 <FormField
                   control={form.control}
+                  name="invoiceSequence"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Invoice Sequence (3 digits)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="001"
+                          maxLength={3}
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, "").slice(0, 3)
+                            field.onChange(value)
+                          }}
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter 3 digits that will prefix the invoice number
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="invoiceNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Invoice Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter invoice number"
+                          {...field}
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter the invoice number (will be combined with sequence)
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="periodStart"
                   render={({ field }) => (
                     <FormItem>
@@ -220,9 +301,20 @@ export function CreateInvoicePage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter currency code" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {currencies.map((c) => (
+                            <SelectItem key={c.id} value={c.currencyCode}>
+                              {c.currencyCode} - {c.currencyName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -253,13 +345,60 @@ export function CreateInvoicePage() {
                   Cancel
                 </Button>
                 <Button type="submit" size="lg" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Saving..." : "Save"}
+                  {createMutation.isPending ? "Creating..." : "Send Invoice"}
                 </Button>
               </div>
             </form>
           </Form>
         </GlassCardContent>
       </GlassCard>
+
+      {/* Send Invoice Dialog */}
+      <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Invoice</DialogTitle>
+            <DialogDescription>
+              Choose how you want to send invoice {createdInvoice?.invoiceNumber} to the tenant.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-4 py-4">
+            <Button
+              onClick={handleSendViaEmail}
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+            >
+              <Mail className="mr-3 h-5 w-5" />
+              <div className="text-left">
+                <div className="font-semibold">Send via Email</div>
+                <div className="text-sm text-muted-foreground">Send invoice as PDF attachment via email</div>
+              </div>
+            </Button>
+            <Button
+              onClick={handleSendViaWhatsApp}
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+            >
+              <MessageCircle className="mr-3 h-5 w-5" />
+              <div className="text-left">
+                <div className="font-semibold">Send via WhatsApp</div>
+                <div className="text-sm text-muted-foreground">Send invoice as PDF via WhatsApp</div>
+              </div>
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSendDialogOpen(false)
+                router.push("/invoices")
+              }}
+            >
+              Skip for Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

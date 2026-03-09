@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -28,6 +29,8 @@ import { toast } from "@/components/shared/feedback/use-toast"
 import { useCreateSubscription } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { usePlans } from "@/features/plans/hooks"
+import { useCurrencies } from "@/features/currency/hooks"
+import { Pricing, type PricingPlanCard } from "../components"
 import { subscriptionSchema } from "../schemas"
 import type { TenantSubscription } from "../types"
 import { z } from "zod"
@@ -37,13 +40,16 @@ export function CreateSubscriptionPage() {
   const createMutation = useCreateSubscription()
   const { data: tenants = [] } = useTenants()
   const { data: plans = [] } = usePlans()
+  const { data: currencies = [] } = useCurrencies()
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
+  const subscriptionFormRef = useRef<HTMLDivElement>(null)
 
   const form = useForm<z.infer<typeof subscriptionSchema>>({
     resolver: zodResolver(subscriptionSchema),
     defaultValues: {
       tenantId: "",
       planId: "",
-      status: "Pending",
+      status: "Active",
       startDate: new Date().toISOString().split("T")[0],
       currentPeriodStart: new Date().toISOString().split("T")[0],
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
@@ -56,6 +62,108 @@ export function CreateSubscriptionPage() {
       notes: "",
     },
   })
+
+  const pricingPlans: PricingPlanCard[] = useMemo(() => {
+    // Hardcoded plans matching the screenshot exactly
+    return [
+      {
+        id: "starter",
+        name: "STARTER",
+        price: 50,
+        yearlyPrice: 480, // $50 * 12 * 0.8
+        period: "month",
+        features: [
+          "Up to 10 projects",
+          "Basic analytics",
+          "48-hour support response time",
+          "Limited API access",
+          "Community support",
+        ],
+        description: "Perfect for individuals and small projects",
+        isPopular: false,
+        currency: "USD",
+      },
+      {
+        id: "professional",
+        name: "PROFESSIONAL",
+        price: 99,
+        yearlyPrice: 950, // $99 * 12 * 0.8
+        period: "month",
+        features: [
+          "Unlimited projects",
+          "Advanced analytics",
+          "24-hour support response time",
+          "Full API access",
+          "Priority support",
+          "Team collaboration",
+          "Custom integrations",
+        ],
+        description: "Ideal for growing teams and businesses",
+        isPopular: false,
+        currency: "USD",
+      },
+      {
+        id: "enterprise",
+        name: "ENTERPRISE",
+        price: 299,
+        yearlyPrice: 2870, // $299 * 12 * 0.8
+        period: "month",
+        features: [
+          "Everything in Professional",
+          "Custom solutions",
+          "Dedicated account manager",
+          "1-hour support response time",
+          "SSO Authentication",
+          "Advanced security",
+          "Custom contracts",
+          "SLA agreement",
+        ],
+        description: "For large organizations with specific needs",
+        isPopular: false,
+        currency: "USD",
+      },
+    ]
+  }, [])
+
+  // Mapping between pricing card IDs and database plan names
+  const planNameMapping: Record<string, string> = {
+    starter: "Basic Plan",
+    professional: "Pro Plan",
+    enterprise: "Enterprise Plan",
+  }
+
+  const handleSelectPlan = (planId: string) => {
+    setSelectedPlanId(planId)
+    const pricingPlan = pricingPlans.find((p) => p.id === planId)
+    if (!pricingPlan) return
+
+    // Map pricing plan ID to database plan name
+    const mappedPlanName = planNameMapping[planId.toLowerCase()]
+    
+    // Try to find matching plan in database
+    const plan = mappedPlanName 
+      ? plans.find((p) => p.planName === mappedPlanName)
+      : plans.find((p) => p.planName.toLowerCase().includes(pricingPlan.name.toLowerCase()) || pricingPlan.name.toLowerCase().includes(p.planName.toLowerCase()))
+    
+    if (plan) {
+      form.setValue("planId", plan.id, { shouldDirty: true, shouldValidate: true })
+      form.setValue("billingCurrency", plan.currency || pricingPlan.currency, { shouldDirty: true, shouldValidate: true })
+      form.setValue("unitPrice", Number(plan.price ?? pricingPlan.price), { shouldDirty: true, shouldValidate: true })
+    } else {
+      // Fallback: use pricing plan data directly
+      form.setValue("billingCurrency", pricingPlan.currency, { shouldDirty: true, shouldValidate: true })
+      form.setValue("unitPrice", pricingPlan.price, { shouldDirty: true, shouldValidate: true })
+      // Note: planId will need to be selected manually if no match found
+    }
+
+    // Scroll to subscription form after a short delay to ensure state updates
+    setTimeout(() => {
+      subscriptionFormRef.current?.scrollIntoView({ 
+        behavior: "smooth", 
+        block: "start" 
+      })
+    }, 100)
+  }
 
   const onSubmit = (data: z.infer<typeof subscriptionSchema>) => {
     const subscriptionData: Omit<TenantSubscription, "id" | "createdAt" | "updatedAt"> = {
@@ -107,14 +215,29 @@ export function CreateSubscriptionPage() {
         ]}
       />
 
-      <GlassCard variant="default" className="max-w-4xl">
-        <GlassCardHeader>
-          <GlassCardTitle>Subscription Information</GlassCardTitle>
-        </GlassCardHeader>
-        <GlassCardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {/* Pricing Cards Section */}
+      {pricingPlans.length > 0 && (
+        <div className="mb-6 w-full">
+          <Pricing
+            plans={pricingPlans}
+            onSelectPlan={handleSelectPlan}
+            selectedPlanId={selectedPlanId}
+            title="Simple, Transparent Pricing"
+            description="Choose the plan that works for you\nAll plans include access to our platform, lead generation tools, and dedicated support."
+          />
+        </div>
+      )}
+
+      {/* Subscription Information Form - Only shown after plan selection */}
+      {selectedPlanId && (
+        <GlassCard variant="default" className="max-w-4xl" ref={subscriptionFormRef}>
+          <GlassCardHeader>
+            <GlassCardTitle>Subscription Information</GlassCardTitle>
+          </GlassCardHeader>
+          <GlassCardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Tenant Field - Full Width at Top */}
                 <FormField
                   control={form.control}
                   name="tenantId"
@@ -140,29 +263,54 @@ export function CreateSubscriptionPage() {
                   )}
                 />
 
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="planId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Plan</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select plan" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {plans.map((plan) => (
-                            <SelectItem key={plan.id} value={plan.id}>
-                              {plan.planName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const selectedPricingPlan = pricingPlans.find((p) => p.id === selectedPlanId)
+                    const mappedPlanName = selectedPricingPlan ? planNameMapping[selectedPricingPlan.id.toLowerCase()] : null
+                    const matchedPlan = mappedPlanName 
+                      ? plans.find((p) => p.planName === mappedPlanName)
+                      : selectedPricingPlan
+                        ? plans.find((p) => p.planName.toLowerCase().includes(selectedPricingPlan.name.toLowerCase()) || selectedPricingPlan.name.toLowerCase().includes(p.planName.toLowerCase()))
+                        : null
+                    
+                    // Use matched plan ID if available, otherwise use field value
+                    const displayValue = matchedPlan?.id || field.value || ""
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel>Plan</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={displayValue}
+                          disabled={!!selectedPlanId}
+                        >
+                          <FormControl>
+                            <SelectTrigger className={selectedPlanId ? "bg-muted cursor-not-allowed" : ""}>
+                              <SelectValue placeholder="Select plan">
+                                {matchedPlan ? matchedPlan.planName : "Select plan"}
+                              </SelectValue>
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {plans.map((plan) => (
+                              <SelectItem key={plan.id} value={plan.id}>
+                                {plan.planName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {selectedPlanId && matchedPlan && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Auto-filled from selected plan ({selectedPricingPlan?.name})
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )
+                  }}
                 />
 
                 <FormField
@@ -171,9 +319,13 @@ export function CreateSubscriptionPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        value={field.value || "Active"}
+                        disabled={true}
+                      >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-muted cursor-not-allowed">
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                         </FormControl>
@@ -186,6 +338,9 @@ export function CreateSubscriptionPage() {
                           <SelectItem value="CANCELED">CANCELED</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Defaults to Active for new subscriptions
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -239,9 +394,20 @@ export function CreateSubscriptionPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Billing Currency</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter currency code" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {currencies.map((c) => (
+                            <SelectItem key={c.id} value={c.currencyCode}>
+                              {c.currencyCode} - {c.currencyName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -250,21 +416,34 @@ export function CreateSubscriptionPage() {
                 <FormField
                   control={form.control}
                   name="unitPrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Unit Price</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="Enter unit price"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const selectedPricingPlan = pricingPlans.find((p) => p.id === selectedPlanId)
+                    const displayPrice = selectedPricingPlan ? selectedPricingPlan.price : field.value
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel>Unit Price</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="Enter unit price"
+                            {...field}
+                            value={displayPrice}
+                            disabled={!!selectedPlanId}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            className={selectedPlanId ? "bg-muted cursor-not-allowed" : ""}
+                          />
+                        </FormControl>
+                        {selectedPlanId && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Auto-filled from selected plan
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )
+                  }}
                 />
 
                 <FormField
@@ -350,25 +529,30 @@ export function CreateSubscriptionPage() {
                     </FormItem>
                   )}
                 />
-              </div>
+                </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-border/30">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-                  size="lg"
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" size="lg" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Saving..." : "Save"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </GlassCardContent>
-      </GlassCard>
+                <div className="flex justify-end gap-3 pt-4 border-t border-border/30">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.back()}
+                    size="lg"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={createMutation.isPending}
+                  >
+                    {createMutation.isPending ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </GlassCardContent>
+        </GlassCard>
+      )}
     </>
   )
 }

@@ -5,14 +5,9 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Form,
   FormControl,
@@ -29,7 +24,7 @@ import { tenantSchema } from "../schemas"
 import type { Tenant } from "../types"
 import { z } from "zod"
 
-const formSchema = tenantSchema.extend({
+const formSchema = tenantSchema.omit({ status: true }).extend({
   tenantId: z.string().min(1, "Tenant ID is required"),
 })
 
@@ -50,7 +45,6 @@ export function CreateTenantPage() {
       state: "",
       zipCode: "",
       country: "",
-      status: "Active",
       ownerName: "",
       ownerEmail: "",
       ownerPhone: "",
@@ -71,7 +65,8 @@ export function CreateTenantPage() {
       state: data.state || "",
       zipCode: data.zipCode || "",
       country: data.country || "",
-      status: data.status,
+      // Status is not chosen in Create Tenant; it is always Active by default.
+      status: "Active",
       subscriptionStatus: "Pending",
       ownerName: data.ownerName,
       ownerEmail: data.ownerEmail,
@@ -115,6 +110,33 @@ export function CreateTenantPage() {
         <GlassCardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="ownerType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Owner Type</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        className="flex items-center gap-6"
+                      >
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="Indv" id="ownerType-indv" />
+                          <Label htmlFor="ownerType-indv">Indv</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="Company" id="ownerType-company" />
+                          <Label htmlFor="ownerType-company">Company</Label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -223,50 +245,6 @@ export function CreateTenantPage() {
                       <FormControl>
                         <Input placeholder="Enter phone" {...field} />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="ownerType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Owner Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select owner type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Indv">Indv</SelectItem>
-                          <SelectItem value="Company">Company</SelectItem>
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

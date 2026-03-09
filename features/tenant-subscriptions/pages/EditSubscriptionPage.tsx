@@ -28,6 +28,7 @@ import { toast } from "@/components/shared/feedback/use-toast"
 import { useSubscription, useUpdateSubscription } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { usePlans } from "@/features/plans/hooks"
+import { useCurrencies } from "@/features/currency/hooks"
 import { subscriptionSchema } from "../schemas"
 import { z } from "zod"
 
@@ -40,6 +41,7 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
   const { data: subscription, isLoading } = useSubscription(subscriptionId)
   const { data: tenants = [] } = useTenants()
   const { data: plans = [] } = usePlans()
+  const { data: currencies = [] } = useCurrencies()
   const updateMutation = useUpdateSubscription()
 
   const form = useForm<z.infer<typeof subscriptionSchema>>({
@@ -198,9 +200,20 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Billing Currency</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter currency code" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {currencies.map((c) => (
+                            <SelectItem key={c.id} value={c.currencyCode}>
+                              {c.currencyCode} - {c.currencyName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

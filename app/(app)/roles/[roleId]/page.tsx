@@ -1,11 +1,10 @@
-import { use } from "react"
 import { RoleDetailPage } from "@/features/roles/pages/RoleDetailPage"
 
 export default function RoleDetailsRoute({
   params,
 }: {
-  params: Promise<{ roleId: string }>
+  params: { roleId: string }
 }) {
-  const { roleId } = use(params)
+  const { roleId } = params
   return <RoleDetailPage roleId={roleId} />
 }

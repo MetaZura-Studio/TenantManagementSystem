@@ -53,7 +53,7 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
           city: branch.city,
           stateProvince: branch.stateProvince,
           zipPostalCode: branch.zipPostalCode,
-          branchStatus: branch.branchStatus,
+          branchStatus: branch.branchStatus ?? "Active",
           remarks: branch.remarks || "",
         }
       : undefined,

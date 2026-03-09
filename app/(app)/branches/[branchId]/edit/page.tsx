@@ -1,11 +1,10 @@
-import { use } from "react"
 import { EditBranchPage } from "@/features/branches/pages/EditBranchPage"
 
 export default function EditBranchRoute({
   params,
 }: {
-  params: Promise<{ branchId: string }>
+  params: { branchId: string }
 }) {
-  const { branchId } = use(params)
+  const { branchId } = params
   return <EditBranchPage branchId={branchId} />
 }

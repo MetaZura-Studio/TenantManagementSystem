@@ -26,6 +26,7 @@ import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
 import { usePlan, useUpdatePlan } from "../hooks"
+import { useCurrencies } from "@/features/currency/hooks"
 import { planSchema } from "../schemas"
 import { z } from "zod"
 
@@ -36,6 +37,7 @@ interface EditPlanPageProps {
 export function EditPlanPage({ planId }: EditPlanPageProps) {
   const router = useRouter()
   const { data: plan, isLoading } = usePlan(planId)
+  const { data: currencies = [] } = useCurrencies()
   const updateMutation = useUpdatePlan()
 
   const form = useForm<z.infer<typeof planSchema>>({
@@ -180,9 +182,20 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter currency code" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {currencies.map((c) => (
+                            <SelectItem key={c.id} value={c.currencyCode}>
+                              {c.currencyCode} - {c.currencyName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -1,11 +1,10 @@
-import { use } from "react"
 import { SubscriptionDetailPage } from "@/features/tenant-subscriptions/pages/SubscriptionDetailPage"
 
 export default function SubscriptionDetailsRoute({
   params,
 }: {
-  params: Promise<{ subscriptionId: string }>
+  params: { subscriptionId: string }
 }) {
-  const { subscriptionId } = use(params)
+  const { subscriptionId } = params
   return <SubscriptionDetailPage subscriptionId={subscriptionId} />
 }

@@ -10,6 +10,8 @@ import { GlassCard, GlassCardContent } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
 import { useUsers, useDeleteUser } from "../hooks"
+import { useTenants } from "@/features/tenants/hooks"
+import { useBranches } from "@/features/branches/hooks"
 import type { User } from "../types"
 import { ColumnDef } from "@tanstack/react-table"
 import { Pencil, Trash2, Plus, Eye } from "lucide-react"
@@ -21,6 +23,8 @@ export function UsersListPage() {
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
 
   const { data: users = [], isLoading } = useUsers()
+  const { data: tenants = [] } = useTenants()
+  const { data: branches = [] } = useBranches()
   const deleteMutation = useDeleteUser()
 
   const handleDelete = (id: string) => {
@@ -65,6 +69,25 @@ export function UsersListPage() {
     {
       accessorKey: "lastName",
       header: "Last Name",
+    },
+    {
+      id: "tenant",
+      header: "Tenant",
+      cell: ({ row }) => {
+        const user = row.original
+        const tenant = tenants.find((t) => t.id === user.tenantId)
+        return tenant ? tenant.tenantName : "-"
+      },
+    },
+    {
+      id: "branch",
+      header: "Branch",
+      cell: ({ row }) => {
+        const user = row.original
+        if (!user.branchId) return "-"
+        const branch = branches.find((b) => b.id === user.branchId)
+        return branch ? branch.branchName : "-"
+      },
     },
     {
       accessorKey: "roleId",

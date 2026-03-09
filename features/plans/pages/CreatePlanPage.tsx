@@ -26,6 +26,7 @@ import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
 import { useCreatePlan } from "../hooks"
+import { useCurrencies } from "@/features/currency/hooks"
 import { planSchema } from "../schemas"
 import type { Plan } from "../types"
 import { z } from "zod"
@@ -33,6 +34,7 @@ import { z } from "zod"
 export function CreatePlanPage() {
   const router = useRouter()
   const createMutation = useCreatePlan()
+  const { data: currencies = [] } = useCurrencies()
 
   const form = useForm<z.infer<typeof planSchema>>({
     resolver: zodResolver(planSchema),
@@ -160,9 +162,20 @@ export function CreatePlanPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter currency code" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {currencies.map((c) => (
+                            <SelectItem key={c.id} value={c.currencyCode}>
+                              {c.currencyCode} - {c.currencyName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

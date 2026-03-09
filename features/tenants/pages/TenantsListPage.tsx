@@ -20,7 +20,7 @@ import { toast } from "@/components/shared/feedback/use-toast"
 import { useTenants, useDeleteTenant } from "../hooks"
 import type { Tenant } from "../types"
 import { ColumnDef } from "@tanstack/react-table"
-import { Eye, Pencil, Trash2, Plus } from "lucide-react"
+import { Eye, Pencil, Trash2, Plus, GitBranch } from "lucide-react"
 import Link from "next/link"
 
 export function TenantsListPage() {
@@ -117,6 +117,11 @@ export function TenantsListPage() {
             <Link href={`/tenants/${tenant.id}/edit`}>
               <Button variant="ghost" size="icon">
                 <Pencil className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href={`/branches?tenantId=${encodeURIComponent(tenant.id)}`}>
+              <Button variant="ghost" size="icon" title="View branches for this tenant">
+                <GitBranch className="h-4 w-4" />
               </Button>
             </Link>
             <Button

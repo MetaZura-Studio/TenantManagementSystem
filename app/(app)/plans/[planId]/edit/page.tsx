@@ -1,11 +1,10 @@
-import { use } from "react"
 import { EditPlanPage } from "@/features/plans/pages/EditPlanPage"
 
 export default function EditPlanRoute({
   params,
 }: {
-  params: Promise<{ planId: string }>
+  params: { planId: string }
 }) {
-  const { planId } = use(params)
+  const { planId } = params
   return <EditPlanPage planId={planId} />
 }

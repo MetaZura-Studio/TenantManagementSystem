@@ -3,6 +3,8 @@ import { z } from "zod"
 export const invoiceSchema = z.object({
   tenantId: z.string().min(1, "Tenant is required"),
   subscriptionId: z.string().min(1, "Subscription is required"),
+  invoiceSequence: z.string().length(3, "Invoice sequence must be exactly 3 digits").regex(/^\d+$/, "Invoice sequence must contain only digits"),
+  invoiceNumber: z.string().min(1, "Invoice number is required"),
   periodStart: z.string().min(1, "Period start is required"),
   periodEnd: z.string().min(1, "Period end is required"),
   issueDate: z.string().min(1, "Issue date is required"),

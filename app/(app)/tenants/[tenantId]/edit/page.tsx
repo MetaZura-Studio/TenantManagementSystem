@@ -1,11 +1,10 @@
-import { use } from "react"
 import { EditTenantPage } from "@/features/tenants/pages/EditTenantPage"
 
 export default function EditTenantRoute({
   params,
 }: {
-  params: Promise<{ tenantId: string }>
+  params: { tenantId: string }
 }) {
-  const { tenantId } = use(params)
+  const { tenantId } = params
   return <EditTenantPage tenantId={tenantId} />
 }

@@ -103,6 +103,32 @@ export function CreateUserPage() {
         <GlassCardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Tenant Field - Full Width at Top */}
+              <FormField
+                control={form.control}
+                name="tenantId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tenant</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select tenant" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {tenants.map((tenant) => (
+                          <SelectItem key={tenant.id} value={tenant.id}>
+                            {tenant.tenantName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -190,31 +216,6 @@ export function CreateUserPage() {
 
                 <FormField
                   control={form.control}
-                  name="tenantId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tenant</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select tenant" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {tenants.map((tenant) => (
-                            <SelectItem key={tenant.id} value={tenant.id}>
-                              {tenant.tenantName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="roleId"
                   render={({ field }) => (
                     <FormItem>
@@ -244,9 +245,13 @@ export function CreateUserPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        value={field.value || "Active"}
+                        disabled={true}
+                      >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-muted cursor-not-allowed">
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                         </FormControl>
@@ -255,6 +260,9 @@ export function CreateUserPage() {
                           <SelectItem value="Inactive">Inactive</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Defaults to Active for new users
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}

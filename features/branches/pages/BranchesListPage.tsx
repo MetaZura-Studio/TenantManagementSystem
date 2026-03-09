@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -26,17 +26,26 @@ import Link from "next/link"
 
 export function BranchesListPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const tenantIdFromUrl = searchParams.get("tenantId")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [branchToDelete, setBranchToDelete] = useState<string | null>(null)
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState(() => ({
     branchName: "",
-    tenantId: "All",
+    tenantId: tenantIdFromUrl ?? "All",
     status: "All",
-  })
+  }))
 
   const { data: branches = [], isLoading } = useBranches()
   const { data: tenants = [] } = useTenants()
   const deleteMutation = useDeleteBranch()
+
+  useEffect(() => {
+    if (tenantIdFromUrl && tenantIdFromUrl !== filters.tenantId) {
+      setFilters((prev) => ({ ...prev, tenantId: tenantIdFromUrl }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantIdFromUrl])
 
   const filteredBranches = branches.filter((branch) => {
     if (filters.branchName && !branch.branchName.toLowerCase().includes(filters.branchName.toLowerCase())) {

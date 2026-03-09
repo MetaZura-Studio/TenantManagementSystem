@@ -30,13 +30,15 @@ import { branchSchema } from "../schemas"
 import type { Branch } from "../types"
 import { z } from "zod"
 
+const formSchema = branchSchema.omit({ branchStatus: true })
+
 export function CreateBranchPage() {
   const router = useRouter()
   const createMutation = useCreateBranch()
   const { data: tenants = [] } = useTenants()
 
-  const form = useForm<z.infer<typeof branchSchema>>({
-    resolver: zodResolver(branchSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       tenantId: "",
       branchName: "",
@@ -48,12 +50,11 @@ export function CreateBranchPage() {
       city: "",
       stateProvince: "",
       zipPostalCode: "",
-      branchStatus: "Active",
       remarks: "",
     },
   })
 
-  const onSubmit = (data: z.infer<typeof branchSchema>) => {
+  const onSubmit = (data: z.infer<typeof formSchema>) => {
     const branchData: Omit<Branch, "id" | "createdAt" | "updatedAt"> = {
       tenantId: data.tenantId,
       branchName: data.branchName,
@@ -65,7 +66,8 @@ export function CreateBranchPage() {
       city: data.city,
       stateProvince: data.stateProvince,
       zipPostalCode: data.zipPostalCode,
-      branchStatus: data.branchStatus,
+      // Status is not chosen in Create Branch; it is always Active by default.
+      branchStatus: "Active",
       remarks: data.remarks || undefined,
     }
     createMutation.mutate(branchData, {
@@ -182,28 +184,6 @@ export function CreateBranchPage() {
                       <FormControl>
                         <Input placeholder="Enter contact person" {...field} />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="branchStatus"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
