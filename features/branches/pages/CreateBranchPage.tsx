@@ -20,6 +20,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
@@ -30,7 +31,7 @@ import { branchSchema } from "../schemas"
 import type { Branch } from "../types"
 import { z } from "zod"
 
-const formSchema = branchSchema.omit({ branchStatus: true })
+const formSchema = branchSchema.omit({ status: true })
 
 export function CreateBranchPage() {
   const router = useRouter()
@@ -41,34 +42,35 @@ export function CreateBranchPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       tenantId: "",
-      branchName: "",
-      phoneNumber: "",
-      email: "",
-      contactPerson: "",
-      addressLine1: "",
-      addressLine2: "",
+      branchCode: `BR${Date.now().toString().slice(-6)}`,
+      nameEn: "",
+      nameAr: "",
+      address: "",
       city: "",
-      stateProvince: "",
-      zipPostalCode: "",
+      state: "",
+      zipCode: "",
+      country: "",
+      phone: "",
+      contactName: "",
       remarks: "",
     },
   })
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    const branchData: Omit<Branch, "id" | "createdAt" | "updatedAt"> = {
+    const branchData: Omit<Branch, "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy"> = {
       tenantId: data.tenantId,
-      branchName: data.branchName,
-      phoneNumber: data.phoneNumber,
-      email: data.email || undefined,
-      contactPerson: data.contactPerson || undefined,
-      addressLine1: data.addressLine1,
-      addressLine2: data.addressLine2 || undefined,
+      branchCode: data.branchCode,
+      nameEn: data.nameEn,
+      nameAr: data.nameAr,
+      address: data.address,
       city: data.city,
-      stateProvince: data.stateProvince,
-      zipPostalCode: data.zipPostalCode,
-      // Status is not chosen in Create Branch; it is always Active by default.
-      branchStatus: "Active",
-      remarks: data.remarks || undefined,
+      state: data.state,
+      zipCode: data.zipCode,
+      country: data.country,
+      phone: data.phone,
+      contactName: data.contactName,
+      status: "ACTIVE", // Default to ACTIVE for new branches
+      remarks: data.remarks,
     }
     createMutation.mutate(branchData, {
       onSuccess: () => {
@@ -123,7 +125,7 @@ export function CreateBranchPage() {
                         <SelectContent>
                           {tenants.map((tenant) => (
                             <SelectItem key={tenant.id} value={tenant.id}>
-                              {tenant.tenantName}
+                              {tenant.shopNameEn}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -135,12 +137,27 @@ export function CreateBranchPage() {
 
                 <FormField
                   control={form.control}
-                  name="branchName"
+                  name="branchCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Branch Name</FormLabel>
+                      <FormLabel>Branch Code</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter branch name" {...field} />
+                        <Input placeholder="Enter branch code" {...field} />
+                      </FormControl>
+                      <FormDescription>Unique branch identifier</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="nameEn"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Branch Name (English)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter branch name in English" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -149,12 +166,12 @@ export function CreateBranchPage() {
 
                 <FormField
                   control={form.control}
-                  name="phoneNumber"
+                  name="nameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
+                      <FormLabel>Branch Name (Arabic)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter phone number" {...field} />
+                        <Input placeholder="Enter branch name in Arabic" {...field} dir="rtl" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -163,54 +180,12 @@ export function CreateBranchPage() {
 
                 <FormField
                   control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="Enter email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="contactPerson"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact Person</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter contact person" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="addressLine1"
+                  name="address"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Address Line 1</FormLabel>
+                      <FormLabel>Address</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter address line 1" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="addressLine2"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Address Line 2</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter address line 2 (optional)" {...field} />
+                        <Input placeholder="Enter address" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -233,12 +208,12 @@ export function CreateBranchPage() {
 
                 <FormField
                   control={form.control}
-                  name="stateProvince"
+                  name="state"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>State/Province</FormLabel>
+                      <FormLabel>State</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter state/province" {...field} />
+                        <Input placeholder="Enter state" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -247,12 +222,54 @@ export function CreateBranchPage() {
 
                 <FormField
                   control={form.control}
-                  name="zipPostalCode"
+                  name="zipCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Zip/Postal Code</FormLabel>
+                      <FormLabel>Zip Code</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter zip/postal code" {...field} />
+                        <Input placeholder="Enter zip code" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter country" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter phone number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="contactName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter contact name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

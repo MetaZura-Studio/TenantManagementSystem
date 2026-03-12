@@ -1,25 +1,25 @@
-import type { SubscriptionStatus } from "@/features/tenants/types"
+export type SubscriptionStatus = "TRIAL" | "ACTIVE" | "SUSPENDED" | "CANCELLED" | "EXPIRED"
 
 export interface TenantSubscription {
   id: string
-  subscriptionId: string
+  subscriptionCode: string
   tenantId: string
   planId: string
   status: SubscriptionStatus
   startDate: string
-  currentPeriodStart: string
-  currentPeriodEnd: string
-  canceledAt?: string
-  trialStart?: string
-  trialEnd?: string
-  billingCurrency: string
+  endDate?: string
+  currentPeriodStart?: string
+  currentPeriodEnd?: string
+  lockedAt?: string
+  cancelledAt?: string
+  billingCurrencyCode: string
   unitPrice: number
-  discountAmount: number
-  discountPercent: number
   autoRenew: boolean
-  cancelAtPeriodEnd: boolean
+  overrideNotes?: string
   notes?: string
-  changeReason?: string
+  // System audit fields (read-only, auto-managed)
   createdAt: string
+  createdBy?: string
   updatedAt: string
+  updatedBy?: string
 }

@@ -4,6 +4,7 @@ export interface Permission {
   create: boolean
   edit: boolean
   delete: boolean
+  print: boolean
 }
 
 export interface Role {

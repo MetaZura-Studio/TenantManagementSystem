@@ -1,21 +1,26 @@
-export type PaymentStatus = "Paid" | "Pending" | "Failed" | "Completed" | "PARTIALLY_PAID" | "ISSUED"
+export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED"
 export type PaymentMethod = "Credit Card" | "Bank Transfer" | "Cash" | "Other"
 
 export interface Payment {
   id: string
-  paymentId: string
-  paymentReference?: string
+  paymentCode: string
+  paymentReference: string
   tenantId: string
-  invoiceId?: string
+  invoiceId: string
+  branchId?: string
   subscriptionId?: string
   amount: number
-  currency: string
-  status: PaymentStatus
   paymentMethod: PaymentMethod
-  provider?: string
-  providerTransactionId?: string
-  paidAt?: string
+  status: PaymentStatus
+  transactionDate: string
+  paymentGatewayRef?: string
   failureReason?: string
+  billingName?: string
+  billingEmail?: string
+  billingAddress?: string
+  // System audit fields (read-only, auto-managed)
   createdAt: string
+  createdBy?: string
   updatedAt: string
+  updatedBy?: string
 }

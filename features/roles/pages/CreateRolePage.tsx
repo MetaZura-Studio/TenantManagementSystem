@@ -30,17 +30,18 @@ import { roleSchema } from "../schemas"
 import type { Role } from "../types"
 import { z } from "zod"
 
+// RBAC Modules based on Dishdasha Management System
 const MODULES = [
   "Dashboard",
-  "Tenants",
-  "Branches",
-  "Plans",
-  "Subscriptions",
+  "Branch",
   "Users",
-  "Roles",
-  "Invoices",
+  "Customers",
+  "Measurements",
+  "Products",
+  "Orders",
   "Payments",
-  "Currency",
+  "Production",
+  "Reports",
   "Settings",
 ]
 
@@ -60,6 +61,7 @@ export function CreateRolePage() {
         create: false,
         edit: false,
         delete: false,
+        print: false,
       })),
     },
   })
@@ -228,6 +230,21 @@ export function CreateRolePage() {
                                     />
                                   </FormControl>
                                   <FormLabel className="text-sm">Delete</FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`permissions.${index}.print`}
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-2">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="text-sm">Print</FormLabel>
                                 </FormItem>
                               )}
                             />

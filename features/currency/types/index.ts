@@ -1,7 +1,14 @@
-export interface CurrencyRate {
+export interface Currency {
   id: string
-  currencyCode: string
-  currencyName: string
+  code: string
+  nameEn: string
+  nameAr: string
   exchangeRate: number
-  lastUpdated: string
+  isActive: boolean
+  lastUpdated?: string
+  // System audit fields (read-only, auto-managed)
+  createdAt: string
+  createdBy?: string
+  updatedAt: string
+  updatedBy?: string
 }

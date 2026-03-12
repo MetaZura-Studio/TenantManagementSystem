@@ -11,6 +11,7 @@ export const roleSchema = z.object({
       create: z.boolean(),
       edit: z.boolean(),
       delete: z.boolean(),
+      print: z.boolean(),
     })
   ),
 })

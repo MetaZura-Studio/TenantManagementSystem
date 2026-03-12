@@ -6,7 +6,7 @@ import type { TenantSubscription } from "@/features/tenant-subscriptions/types"
 import type { User } from "@/features/users/types"
 import type { Role } from "@/features/roles/types"
 import type { CurrencyRate } from "@/features/currency/types"
-import { MODULES } from "@/types"
+import { getRolePermissions } from "@/lib/utils/rbac"
 
 export function seedData() {
   const store = useStore.getState()
@@ -53,68 +53,60 @@ export function seedData() {
     store.setCurrencies(currencies)
   }
 
-  // Seed Roles
+  // Seed Roles - Based on Dishdasha Management System RBAC Matrix
   if (store.roles.length === 0) {
-    const adminPermissions = MODULES.map((module) => ({
-      module,
-      view: true,
-      create: true,
-      edit: true,
-      delete: true,
-    }))
-
     const roles: Role[] = [
       {
-        id: "role-admin",
-        roleName: "Admin",
-        description: "Full access to all features and settings.",
+        id: "role-owner",
+        roleName: "Owner",
+        description: "Full administrative access. Can manage branches, users, customers, products, orders, payments, and settings.",
         status: "Active",
-        permissions: adminPermissions,
+        permissions: getRolePermissions("Owner"),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
-        id: "role-tenant-manager",
-        roleName: "Tenant Manager",
-        description: "Manages tenants, branches, and subscriptions.",
+        id: "role-seller",
+        roleName: "Seller",
+        description: "Customer-facing role. Can create and edit customers, measurements, orders, and record payments.",
         status: "Active",
-        permissions: MODULES.map((module) => ({
-          module,
-          view: true,
-          create: module === "Tenant Management" || module === "Plans & Subscriptions",
-          edit: module === "Tenant Management" || module === "Plans & Subscriptions",
-          delete: false,
-        })),
+        permissions: getRolePermissions("Seller"),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
-        id: "role-user-manager",
-        roleName: "User Manager",
-        description: "Manages user accounts and roles.",
+        id: "role-supervisor",
+        roleName: "Supervisor",
+        description: "Management role. Can view reports, edit orders and production, and print measurements.",
         status: "Active",
-        permissions: MODULES.map((module) => ({
-          module,
-          view: true,
-          create: module === "Users" || module === "Roles",
-          edit: module === "Users" || module === "Roles",
-          delete: module === "Users" || module === "Roles",
-        })),
+        permissions: getRolePermissions("Supervisor"),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
-        id: "role-finance-manager",
-        roleName: "Finance Manager",
-        description: "Manages invoices and payments.",
+        id: "role-cutter",
+        roleName: "Cutter",
+        description: "Production role. Can view orders and edit production status.",
         status: "Active",
-        permissions: MODULES.map((module) => ({
-          module,
-          view: true,
-          create: module === "Invoice Management" || module === "Payments",
-          edit: module === "Invoice Management" || module === "Payments",
-          delete: false,
-        })),
+        permissions: getRolePermissions("Cutter"),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: "role-tailor",
+        roleName: "Tailor",
+        description: "Production role. Can view orders, edit production status, and print measurements.",
+        status: "Active",
+        permissions: getRolePermissions("Tailor"),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: "role-iron",
+        roleName: "Iron",
+        description: "Finishing role. Can view orders and production status.",
+        status: "Active",
+        permissions: getRolePermissions("Iron"),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },

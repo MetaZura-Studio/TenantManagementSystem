@@ -37,7 +37,7 @@ export function TenantsListPage() {
   const deleteMutation = useDeleteTenant()
 
   const filteredTenants = tenants.filter((tenant) => {
-    if (filters.tenantName && !tenant.tenantName.toLowerCase().includes(filters.tenantName.toLowerCase())) {
+    if (filters.tenantName && !tenant.shopNameEn.toLowerCase().includes(filters.tenantName.toLowerCase())) {
       return false
     }
     if (filters.status !== "All" && tenant.status !== filters.status) {
@@ -77,25 +77,24 @@ export function TenantsListPage() {
 
   const columns: ColumnDef<Tenant>[] = [
     {
-      accessorKey: "tenantId",
-      header: "Tenant ID",
+      accessorKey: "tenantCode",
+      header: "Tenant Code",
     },
     {
-      accessorKey: "tenantName",
-      header: "Tenant Name",
+      accessorKey: "shopNameEn",
+      header: "Shop Name (EN)",
+    },
+    {
+      accessorKey: "shopNameAr",
+      header: "Shop Name (AR)",
     },
     {
       accessorKey: "contactPerson",
       header: "Contact Person",
     },
     {
-      accessorKey: "email",
-      header: "Email",
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      accessorKey: "ownerEmail",
+      header: "Owner Email",
     },
     {
       accessorKey: "subscriptionStatus",

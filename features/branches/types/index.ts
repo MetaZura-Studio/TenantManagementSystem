@@ -1,17 +1,23 @@
+export type BranchStatus = "ACTIVE" | "INACTIVE"
+
 export interface Branch {
   id: string
   tenantId: string
-  branchName: string
-  phoneNumber: string
-  email?: string
-  contactPerson?: string
-  addressLine1: string
-  addressLine2?: string
+  branchCode: string
+  nameEn: string
+  nameAr: string
+  address: string
   city: string
-  stateProvince: string
-  zipPostalCode: string
-  branchStatus: "Active" | "Inactive"
+  state: string
+  zipCode: string
+  country: string
+  phone: string
+  contactName: string
+  status: BranchStatus
   remarks?: string
+  // System audit fields (read-only, auto-managed)
   createdAt: string
+  createdBy?: string
   updatedAt: string
+  updatedBy?: string
 }

@@ -1,19 +1,24 @@
-export type UserStatus = "Active" | "Inactive"
+export type UserStatus = "ACTIVE" | "INACTIVE" | "LOCKED"
 
 export interface User {
   id: string
-  userId: string
+  tenantId: string
+  branchId: string
+  roleId: string
+  fullNameEn: string
+  fullNameAr: string
   username: string
   email: string
   mobile: string
-  firstName?: string
-  lastName?: string
-  phone?: string
-  address?: string
-  tenantId: string
-  branchId?: string
-  roleId: string
+  passwordHash: string
   status: UserStatus
+  address?: string
+  zipCode?: string
+  country?: string
+  lastLoginAt?: string
+  // System audit fields (read-only, auto-managed)
   createdAt: string
+  createdBy?: string
   updatedAt: string
+  updatedBy?: string
 }

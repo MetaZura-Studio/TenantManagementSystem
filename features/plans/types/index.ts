@@ -1,21 +1,22 @@
 export type BillingCycle = "Monthly" | "Yearly"
-export type PlanStatus = "Active" | "Inactive"
 
 export interface Plan {
   id: string
   planCode: string
-  planName: string
+  nameEn: string
+  nameAr: string
   description?: string
-  amount: number
   billingCycle: BillingCycle
-  currency: string
-  price: number
-  setupFee: number
-  trialDays: number
-  gracePeriodDays: number
-  status: PlanStatus
-  displayOrder: number
+  currencyCode: string
+  monthlyPrice: number
+  yearlyPrice: number
+  maxBranches: number
+  maxUsers: number
   isActive: boolean
+  featuresJson?: string
+  // System audit fields (read-only, auto-managed)
   createdAt: string
+  createdBy?: string
   updatedAt: string
+  updatedBy?: string
 }

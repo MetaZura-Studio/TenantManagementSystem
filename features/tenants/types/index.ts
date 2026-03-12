@@ -1,26 +1,32 @@
 export type TenantStatus = "Active" | "Inactive"
-export type SubscriptionStatus = "Active" | "Expired" | "Pending" | "TRIALING" | "PAST_DUE" | "CANCELED"
-export type OwnerType = "Indv" | "Company"
+export type SubscriptionStatus = "TRIAL" | "ACTIVE" | "SUSPENDED" | "CANCELLED" | "EXPIRED"
+export type TenantType = "Individual" | "Company"
 
 export interface Tenant {
   id: string
-  tenantId: string
-  tenantName: string
-  contactPerson: string
-  email: string
-  phone: string
-  address: string
-  city: string
-  state: string
-  zipCode: string
-  country: string
-  status: TenantStatus
-  subscriptionStatus: SubscriptionStatus
+  tenantCode: string
+  slug: string
+  shopNameEn: string
+  shopNameAr: string
   ownerName: string
   ownerEmail: string
-  ownerPhone: string
-  ownerType: OwnerType
-  remarks?: string
+  ownerMobile: string
+  tenantType: TenantType
+  contactPerson: string
+  address: string
+  city: string
+  zipCode: string
+  country: string
+  timezone: string
+  subscriptionStatus: SubscriptionStatus
+  subscriptionStartDate?: string
+  subscriptionEndDate?: string
+  lockedAt?: string
+  suspensionReason?: string
+  deletedAt?: string
+  // System audit fields (read-only, auto-managed)
   createdAt: string
+  createdBy?: string
   updatedAt: string
+  updatedBy?: string
 }

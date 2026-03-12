@@ -19,53 +19,67 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
 import { useCreateUser } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
+import { useBranches } from "@/features/branches/hooks"
 import { useRoles } from "@/features/roles/hooks"
 import { userSchema } from "../schemas"
 import type { User } from "../types"
 import { z } from "zod"
 
+const formSchema = userSchema.omit({ status: true })
+
 export function CreateUserPage() {
   const router = useRouter()
   const createMutation = useCreateUser()
   const { data: tenants = [] } = useTenants()
+  const { data: branches = [] } = useBranches()
   const { data: roles = [] } = useRoles()
 
-  const form = useForm<z.infer<typeof userSchema>>({
-    resolver: zodResolver(userSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
-      password: "",
-      email: "",
-      mobile: "",
-      firstName: "",
-      lastName: "",
       tenantId: "",
       branchId: "",
       roleId: "",
-      status: "Active",
+      fullNameEn: "",
+      fullNameAr: "",
+      username: "",
+      email: "",
+      mobile: "",
+      password: "",
+      address: "",
+      zipCode: "",
+      country: "",
     },
   })
 
-  const onSubmit = (data: z.infer<typeof userSchema>) => {
-    const userData: Omit<User, "id" | "createdAt" | "updatedAt"> = {
-      userId: `USER-${Date.now().toString().slice(-6)}`,
+  // Filter branches based on selected tenant
+  const selectedTenantId = form.watch("tenantId")
+  const availableBranches = selectedTenantId
+    ? branches.filter((b) => b.tenantId === selectedTenantId)
+    : []
+
+  const onSubmit = (data: z.infer<typeof formSchema>) => {
+    const userData: Omit<User, "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy" | "passwordHash"> = {
+      tenantId: data.tenantId,
+      branchId: data.branchId,
+      roleId: data.roleId,
+      fullNameEn: data.fullNameEn,
+      fullNameAr: data.fullNameAr,
       username: data.username,
       email: data.email,
       mobile: data.mobile,
-      firstName: data.firstName || undefined,
-      lastName: data.lastName || undefined,
-      phone: data.mobile,
-      address: undefined,
-      tenantId: data.tenantId,
-      branchId: data.branchId || undefined,
-      roleId: data.roleId,
-      status: data.status,
+      passwordHash: "", // Will be hashed by backend
+      status: "ACTIVE", // Default to ACTIVE for new users
+      address: data.address,
+      zipCode: data.zipCode,
+      country: data.country,
     }
     createMutation.mutate(userData, {
       onSuccess: () => {
@@ -110,7 +124,10 @@ export function CreateUserPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tenant</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={(value) => {
+                      field.onChange(value)
+                      form.setValue("branchId", "") // Reset branch when tenant changes
+                    }} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select tenant" />
@@ -119,7 +136,7 @@ export function CreateUserPage() {
                       <SelectContent>
                         {tenants.map((tenant) => (
                           <SelectItem key={tenant.id} value={tenant.id}>
-                            {tenant.tenantName}
+                            {tenant.shopNameEn}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -132,83 +149,28 @@ export function CreateUserPage() {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name="username"
+                  name="branchId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter username" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="Enter email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="Enter password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="mobile"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mobile</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter mobile number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter first name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter last name" {...field} />
-                      </FormControl>
+                      <FormLabel>Branch</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                        disabled={!selectedTenantId}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={selectedTenantId ? "Select branch" : "Select tenant first"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {availableBranches.map((branch) => (
+                            <SelectItem key={branch.id} value={branch.id}>
+                              {branch.nameEn}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -241,28 +203,126 @@ export function CreateUserPage() {
 
                 <FormField
                   control={form.control}
-                  name="status"
+                  name="fullNameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        value={field.value || "Active"}
-                        disabled={true}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="bg-muted cursor-not-allowed">
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Defaults to Active for new users
-                      </p>
+                      <FormLabel>Full Name (English)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter full name in English" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="fullNameAr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name (Arabic)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter full name in Arabic" {...field} dir="rtl" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter username" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="Enter email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="mobile"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mobile</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter mobile number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Enter password" {...field} />
+                      </FormControl>
+                      <FormDescription>Minimum 6 characters</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter address (optional)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="zipCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Zip Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter zip code (optional)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter country (optional)" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

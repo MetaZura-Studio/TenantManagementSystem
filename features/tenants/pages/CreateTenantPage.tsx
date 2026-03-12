@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Form,
   FormControl,
@@ -15,64 +21,87 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
-import { useCreateTenant } from "../hooks"
+import { useCreateTenant, useTenants } from "../hooks"
 import { tenantSchema } from "../schemas"
 import type { Tenant } from "../types"
+import { generateSlug, ensureUniqueSlug } from "@/lib/utils/slug"
 import { z } from "zod"
 
-const formSchema = tenantSchema.omit({ status: true }).extend({
-  tenantId: z.string().min(1, "Tenant ID is required"),
-})
+// Common timezones
+const TIMEZONES = [
+  "UTC",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Europe/London",
+  "Europe/Paris",
+  "Asia/Dubai",
+  "Asia/Riyadh",
+  "Asia/Karachi",
+  "Asia/Kolkata",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+]
+
+// Form schema without slug (slug is auto-generated)
+const formSchema = tenantSchema.omit({ slug: true })
 
 export function CreateTenantPage() {
   const router = useRouter()
   const createMutation = useCreateTenant()
+  const { data: existingTenants = [] } = useTenants()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      tenantId: `T${Date.now().toString().slice(-4)}`,
-      tenantName: "",
-      contactPerson: "",
-      email: "",
-      phone: "",
-      address: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      country: "",
+      tenantCode: `T${Date.now().toString().slice(-6)}`,
+      shopNameEn: "",
+      shopNameAr: "",
       ownerName: "",
       ownerEmail: "",
-      ownerPhone: "",
-      ownerType: "Indv",
-      remarks: "",
+      ownerMobile: "",
+      tenantType: "Individual",
+      contactPerson: "",
+      address: "",
+      city: "",
+      zipCode: "",
+      country: "",
+      timezone: "UTC",
+      subscriptionStatus: "TRIAL",
     },
   })
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    const tenantData: Omit<Tenant, "id" | "createdAt" | "updatedAt"> = {
-      tenantId: data.tenantId,
-      tenantName: data.tenantName,
-      contactPerson: data.contactPerson,
-      email: data.email,
-      phone: data.phone,
-      address: data.address || "",
-      city: data.city || "",
-      state: data.state || "",
-      zipCode: data.zipCode || "",
-      country: data.country || "",
-      // Status is not chosen in Create Tenant; it is always Active by default.
-      status: "Active",
-      subscriptionStatus: "Pending",
+    // Generate slug from shopNameEn
+    const baseSlug = generateSlug(data.shopNameEn)
+    const existingSlugs = existingTenants.map((t) => t.slug)
+    const uniqueSlug = ensureUniqueSlug(baseSlug, existingSlugs)
+
+    const tenantData: Omit<Tenant, "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy"> = {
+      tenantCode: data.tenantCode,
+      slug: uniqueSlug, // Auto-generated slug
+      shopNameEn: data.shopNameEn,
+      shopNameAr: data.shopNameAr,
       ownerName: data.ownerName,
       ownerEmail: data.ownerEmail,
-      ownerPhone: data.ownerPhone,
-      ownerType: data.ownerType,
-      remarks: data.remarks,
+      ownerMobile: data.ownerMobile,
+      tenantType: data.tenantType,
+      contactPerson: data.contactPerson,
+      address: data.address,
+      city: data.city,
+      zipCode: data.zipCode,
+      country: data.country,
+      timezone: data.timezone,
+      subscriptionStatus: data.subscriptionStatus,
+      subscriptionStartDate: data.subscriptionStartDate,
+      subscriptionEndDate: data.subscriptionEndDate,
     }
     createMutation.mutate(tenantData, {
       onSuccess: () => {
@@ -110,12 +139,13 @@ export function CreateTenantPage() {
         <GlassCardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Tenant Type - Radio buttons at top */}
               <FormField
                 control={form.control}
-                name="ownerType"
+                name="tenantType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Owner Type</FormLabel>
+                    <FormLabel>Tenant Type</FormLabel>
                     <FormControl>
                       <RadioGroup
                         value={field.value}
@@ -123,12 +153,12 @@ export function CreateTenantPage() {
                         className="flex items-center gap-6"
                       >
                         <div className="flex items-center gap-2">
-                          <RadioGroupItem value="Indv" id="ownerType-indv" />
-                          <Label htmlFor="ownerType-indv">Indv</Label>
+                          <RadioGroupItem value="Individual" id="tenantType-individual" />
+                          <Label htmlFor="tenantType-individual">Individual</Label>
                         </div>
                         <div className="flex items-center gap-2">
-                          <RadioGroupItem value="Company" id="ownerType-company" />
-                          <Label htmlFor="ownerType-company">Company</Label>
+                          <RadioGroupItem value="Company" id="tenantType-company" />
+                          <Label htmlFor="tenantType-company">Company</Label>
                         </div>
                       </RadioGroup>
                     </FormControl>
@@ -138,34 +168,65 @@ export function CreateTenantPage() {
               />
 
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {/* Tenant Code */}
                 <FormField
                   control={form.control}
-                  name="tenantId"
+                  name="tenantCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tenant ID</FormLabel>
+                      <FormLabel>Tenant Code</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter tenant ID" {...field} />
+                        <Input placeholder="Enter tenant code" {...field} />
+                      </FormControl>
+                      <FormDescription>Unique business identifier</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Shop Name English */}
+                <FormField
+                  control={form.control}
+                  name="shopNameEn"
+                  render={({ field }) => {
+                    const shopNameEn = form.watch("shopNameEn")
+                    const generatedSlug = shopNameEn ? generateSlug(shopNameEn) : ""
+                    const existingSlugs = existingTenants.map((t) => t.slug)
+                    const previewSlug = generatedSlug ? ensureUniqueSlug(generatedSlug, existingSlugs) : ""
+
+                    return (
+                      <FormItem>
+                        <FormLabel>Shop Name (English)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter shop name in English" {...field} />
+                        </FormControl>
+                        {previewSlug && (
+                          <FormDescription>
+                            Slug will be: <code className="text-xs bg-muted px-1 py-0.5 rounded">{previewSlug}</code>
+                          </FormDescription>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )
+                  }}
+                />
+
+                {/* Shop Name Arabic */}
+                <FormField
+                  control={form.control}
+                  name="shopNameAr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Shop Name (Arabic)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter shop name in Arabic" {...field} dir="rtl" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="tenantName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tenant Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter tenant name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+                {/* Owner Name */}
                 <FormField
                   control={form.control}
                   name="ownerName"
@@ -180,6 +241,7 @@ export function CreateTenantPage() {
                   )}
                 />
 
+                {/* Owner Email */}
                 <FormField
                   control={form.control}
                   name="ownerEmail"
@@ -194,20 +256,22 @@ export function CreateTenantPage() {
                   )}
                 />
 
+                {/* Owner Mobile */}
                 <FormField
                   control={form.control}
-                  name="ownerPhone"
+                  name="ownerMobile"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Owner Phone</FormLabel>
+                      <FormLabel>Owner Mobile</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter owner phone" {...field} />
+                        <Input placeholder="Enter owner mobile" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
+                {/* Contact Person */}
                 <FormField
                   control={form.control}
                   name="contactPerson"
@@ -222,43 +286,113 @@ export function CreateTenantPage() {
                   )}
                 />
 
+                {/* Address */}
                 <FormField
                   control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="Enter email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter phone" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="remarks"
+                  name="address"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Remarks</FormLabel>
+                      <FormLabel>Address</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Enter remarks" {...field} />
+                        <Input placeholder="Enter address" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* City */}
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter city" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Zip Code */}
+                <FormField
+                  control={form.control}
+                  name="zipCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Zip Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter zip code" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Country */}
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter country" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Timezone */}
+                <FormField
+                  control={form.control}
+                  name="timezone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Timezone</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select timezone" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {TIMEZONES.map((tz) => (
+                            <SelectItem key={tz} value={tz}>
+                              {tz}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Subscription Status */}
+                <FormField
+                  control={form.control}
+                  name="subscriptionStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subscription Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select subscription status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="TRIAL">TRIAL</SelectItem>
+                          <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                          <SelectItem value="SUSPENDED">SUSPENDED</SelectItem>
+                          <SelectItem value="CANCELLED">CANCELLED</SelectItem>
+                          <SelectItem value="EXPIRED">EXPIRED</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

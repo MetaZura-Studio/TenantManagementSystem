@@ -27,21 +27,10 @@ import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
 import { useRole, useUpdateRole } from "../hooks"
 import { roleSchema } from "../schemas"
+import { RBAC_MODULES } from "@/lib/utils/rbac"
 import { z } from "zod"
 
-const MODULES = [
-  "Dashboard",
-  "Tenants",
-  "Branches",
-  "Plans",
-  "Subscriptions",
-  "Users",
-  "Roles",
-  "Invoices",
-  "Payments",
-  "Currency",
-  "Settings",
-]
+const MODULES = RBAC_MODULES
 
 interface EditRolePageProps {
   roleId: string
@@ -54,12 +43,12 @@ export function EditRolePage({ roleId }: EditRolePageProps) {
 
   // Merge existing permissions with all modules
   const getPermissions = () => {
-    if (!role) return MODULES.map((module) => ({ module, view: false, create: false, edit: false, delete: false }))
+    if (!role) return MODULES.map((module) => ({ module, view: false, create: false, edit: false, delete: false, print: false }))
     
     const existingPermissions = role.permissions || []
     return MODULES.map((module) => {
       const existing = existingPermissions.find((p) => p.module === module)
-      return existing || { module, view: false, create: false, edit: false, delete: false }
+      return existing || { module, view: false, create: false, edit: false, delete: false, print: false }
     })
   }
 
@@ -253,6 +242,21 @@ export function EditRolePage({ roleId }: EditRolePageProps) {
                                     />
                                   </FormControl>
                                   <FormLabel className="text-sm">Delete</FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`permissions.${index}.print`}
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-2">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="text-sm">Print</FormLabel>
                                 </FormItem>
                               )}
                             />
