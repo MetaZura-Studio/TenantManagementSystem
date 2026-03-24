@@ -1,41 +1,106 @@
 import { useStore } from "../store"
-import type { TenantSubscription } from "@/features/tenant-subscriptions/types"
+import type {
+  CreateTenantSubscriptionPayload,
+  TenantSubscription,
+  UpdateTenantSubscriptionPayload,
+} from "@/features/tenant-subscriptions/types"
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const generateSubscriptionId = () => `sub-${Date.now()}`
+const generateSubscriptionCode = () => `SUB-${Date.now()}`
 
 export const tenantSubscriptionsApi = {
   getAll: async (): Promise<TenantSubscription[]> => {
     await delay(300)
     return useStore.getState().subscriptions
   },
+
   getById: async (id: string): Promise<TenantSubscription | undefined> => {
     await delay(200)
-    return useStore.getState().subscriptions.find((s) => s.id === id)
+    return useStore
+      .getState()
+      .subscriptions.find((subscription) => subscription.id === id)
   },
+
   create: async (
-    subscription: Omit<TenantSubscription, "id" | "createdAt" | "updatedAt">
+    payload: CreateTenantSubscriptionPayload
   ): Promise<TenantSubscription> => {
     await delay(400)
+
+    const now = new Date().toISOString()
+
     const newSubscription: TenantSubscription = {
-      ...subscription,
-      id: `sub-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      id: generateSubscriptionId(),
+      subscriptionCode: generateSubscriptionCode(),
+      ...payload,
+      createdAt: now,
+      updatedAt: now,
     }
+
     useStore.getState().addSubscription(newSubscription)
     return newSubscription
   },
+
   update: async (
-    id: string,
-    updates: Partial<TenantSubscription>
+    payload: UpdateTenantSubscriptionPayload
   ): Promise<TenantSubscription> => {
     await delay(400)
-    const subscription = useStore.getState().subscriptions.find((s) => s.id === id)
-    if (!subscription) throw new Error("Subscription not found")
-    const updated = { ...subscription, ...updates, updatedAt: new Date().toISOString() }
-    useStore.getState().updateSubscription(id, updated)
-    return updated
+
+    const { id, ...updates } = payload
+    const existingSubscription = useStore
+      .getState()
+      .subscriptions.find((subscription) => subscription.id === id)
+
+    if (!existingSubscription) {
+      throw new Error("Subscription not found")
+    }
+
+    const updatedSubscription: TenantSubscription = {
+      ...existingSubscription,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    }
+
+    useStore.getState().updateSubscription(id, updatedSubscription)
+    return updatedSubscription
   },
+
+  activate: async (id: string): Promise<TenantSubscription> => {
+    return tenantSubscriptionsApi.update({
+      id,
+      status: "ACTIVE",
+      lockedAt: undefined,
+    })
+  },
+
+  suspend: async (id: string): Promise<TenantSubscription> => {
+    return tenantSubscriptionsApi.update({
+      id,
+      status: "SUSPENDED",
+      lockedAt: new Date().toISOString(),
+    })
+  },
+
+  cancel: async (id: string): Promise<TenantSubscription> => {
+    const now = new Date().toISOString()
+
+    return tenantSubscriptionsApi.update({
+      id,
+      status: "CANCELLED",
+      cancelledAt: now,
+      autoRenew: false,
+    })
+  },
+
+  expire: async (id: string): Promise<TenantSubscription> => {
+    return tenantSubscriptionsApi.update({
+      id,
+      status: "EXPIRED",
+      autoRenew: false,
+    })
+  },
+
   delete: async (id: string): Promise<void> => {
     await delay(300)
     useStore.getState().deleteSubscription(id)
