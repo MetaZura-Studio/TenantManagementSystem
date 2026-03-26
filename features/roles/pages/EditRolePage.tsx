@@ -29,6 +29,8 @@ import { useRole, useUpdateRole } from "../hooks"
 import { roleSchema } from "../schemas"
 import { RBAC_MODULES } from "@/lib/utils/rbac"
 import { z } from "zod"
+import { useSession } from "@/lib/auth/useSession"
+import { PERMISSIONS, hasPermissionForSession } from "@/lib/auth/permissions"
 
 const MODULES = RBAC_MODULES
 
@@ -40,6 +42,8 @@ export function EditRolePage({ roleId }: EditRolePageProps) {
   const router = useRouter()
   const { data: role, isLoading } = useRole(roleId)
   const updateMutation = useUpdateRole()
+  const { session, loading: sessionLoading } = useSession()
+  const canUpdate = hasPermissionForSession(session, PERMISSIONS.ROLES.UPDATE)
 
   // Merge existing permissions with all modules
   const getPermissions = () => {
@@ -100,6 +104,14 @@ export function EditRolePage({ roleId }: EditRolePageProps) {
 
   if (!role) {
     return <div className="text-center py-8">Role not found</div>
+  }
+
+  if (!sessionLoading && !canUpdate) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        You don&apos;t have permission to edit roles.
+      </div>
+    )
   }
 
   return (

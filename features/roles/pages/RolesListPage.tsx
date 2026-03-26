@@ -13,6 +13,8 @@ import type { Role } from "../types"
 import { ColumnDef } from "@tanstack/react-table"
 import { Pencil, Trash2, Plus } from "lucide-react"
 import Link from "next/link"
+import { useSession } from "@/lib/auth/useSession"
+import { PERMISSIONS, hasPermissionForSession } from "@/lib/auth/permissions"
 
 export function RolesListPage() {
   const router = useRouter()
@@ -21,8 +23,21 @@ export function RolesListPage() {
 
   const { data: roles = [], isLoading } = useRoles()
   const deleteMutation = useDeleteRole()
+  const { session } = useSession()
+
+  const canCreate = hasPermissionForSession(session, PERMISSIONS.ROLES.CREATE)
+  const canUpdate = hasPermissionForSession(session, PERMISSIONS.ROLES.UPDATE)
+  const canDelete = hasPermissionForSession(session, PERMISSIONS.ROLES.DELETE)
 
   const handleDelete = (id: string) => {
+    if (!canDelete) {
+      toast({
+        title: "Forbidden",
+        description: "You don't have permission to delete roles.",
+        variant: "destructive",
+      })
+      return
+    }
     setRoleToDelete(id)
     setDeleteDialogOpen(true)
   }
@@ -65,7 +80,7 @@ export function RolesListPage() {
         return (
           <div className="flex items-center space-x-2">
             <Link href={`/roles/${role.id}/edit`}>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" disabled={!canUpdate}>
                 <Pencil className="h-4 w-4" />
               </Button>
             </Link>
@@ -73,6 +88,7 @@ export function RolesListPage() {
               variant="ghost"
               size="icon"
               onClick={() => handleDelete(role.id)}
+              disabled={!canDelete}
             >
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
@@ -86,10 +102,10 @@ export function RolesListPage() {
     <>
       <PageHeader
         title="Roles List"
-        subtitle="Manage user roles and permissions"
+        subtitle={`Manage user roles and permissions${session?.user?.email ? ` • Signed in as ${session.user.email} (${session.user.role})` : ""}`}
         breadcrumbs={[{ label: "Roles" }]}
         actions={
-          <Button onClick={() => router.push("/roles/new")} size="lg">
+          <Button onClick={() => router.push("/roles/new")} size="lg" disabled={!canCreate}>
             <Plus className="mr-2 h-4 w-4" />
             Create Role
           </Button>

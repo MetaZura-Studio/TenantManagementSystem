@@ -1,22 +1,79 @@
-// Mock session management
+// Session management
 export interface Session {
   user: {
     id: string
     name: string
     email: string
     role: string
+    permissions?: string[]
   }
 }
 
-export const mockSession: Session = {
-  user: {
-    id: "admin-1",
-    name: "Admin User",
-    email: "admin@example.com",
-    role: "admin",
-  },
+const CLIENT_SESSION_KEY = "tms_client_session"
+
+/**
+ * Synchronous getter kept for backward compatibility.
+ *
+ * Important: This does NOT read the httpOnly cookie.
+ * For real session state, use `fetchSession()` / `useSession()`.
+ */
+export function getSession(): Session {
+  if (typeof window === "undefined") {
+    // Server components should not rely on this.
+    return {
+      user: { id: "anonymous", name: "Anonymous", email: "", role: "anonymous" },
+    }
+  }
+
+  try {
+    const raw = window.localStorage.getItem(CLIENT_SESSION_KEY)
+    if (!raw) {
+      // Keep legacy behavior permissive for UI until all screens adopt async session.
+      return {
+        user: {
+          id: "admin-1",
+          name: "Admin User",
+          email: "admin@example.com",
+          role: "admin",
+          permissions: ["*"],
+        },
+      }
+    }
+    return JSON.parse(raw) as Session
+  } catch {
+    return {
+      user: {
+        id: "admin-1",
+        name: "Admin User",
+        email: "admin@example.com",
+        role: "admin",
+        permissions: ["*"],
+      },
+    }
+  }
 }
 
-export function getSession(): Session {
-  return mockSession
+export async function fetchSession(): Promise<Session | null> {
+  const res = await fetch("/api/auth/me", { method: "GET" })
+  if (!res.ok) return null
+  const data = (await res.json()) as { user: Session["user"] }
+  return { user: data.user }
 }
+
+export function setClientSession(session: Session | null) {
+  if (typeof window === "undefined") return
+  if (!session) {
+    window.localStorage.removeItem(CLIENT_SESSION_KEY)
+    return
+  }
+  window.localStorage.setItem(CLIENT_SESSION_KEY, JSON.stringify(session))
+}
+
+export async function logout(): Promise<void> {
+  try {
+    await fetch("/api/auth/logout", { method: "POST" })
+  } finally {
+    setClientSession(null)
+  }
+}
+

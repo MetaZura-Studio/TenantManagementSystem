@@ -8,6 +8,8 @@ import { PageHeader } from "@/components/shared/page-header"
 import { useRole } from "../hooks"
 import { Pencil, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { useSession } from "@/lib/auth/useSession"
+import { PERMISSIONS, hasPermissionForSession } from "@/lib/auth/permissions"
 
 interface RoleDetailPageProps {
   roleId: string
@@ -16,6 +18,8 @@ interface RoleDetailPageProps {
 export function RoleDetailPage({ roleId }: RoleDetailPageProps) {
   const router = useRouter()
   const { data: role, isLoading } = useRole(roleId)
+  const { session } = useSession()
+  const canUpdate = hasPermissionForSession(session, PERMISSIONS.ROLES.UPDATE)
 
   if (isLoading) {
     return <div className="text-center py-8">Loading...</div>
@@ -41,7 +45,7 @@ export function RoleDetailPage({ roleId }: RoleDetailPageProps) {
               Back
             </Button>
             <Link href={`/roles/${roleId}/edit`}>
-              <Button size="lg">
+              <Button size="lg" disabled={!canUpdate}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit Role
               </Button>

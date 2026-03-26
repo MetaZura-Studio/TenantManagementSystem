@@ -29,6 +29,8 @@ import { useCreateRole } from "../hooks"
 import { roleSchema } from "../schemas"
 import type { Role } from "../types"
 import { z } from "zod"
+import { useSession } from "@/lib/auth/useSession"
+import { PERMISSIONS, hasPermissionForSession } from "@/lib/auth/permissions"
 
 // RBAC Modules based on Dishdasha Management System
 const MODULES = [
@@ -48,6 +50,8 @@ const MODULES = [
 export function CreateRolePage() {
   const router = useRouter()
   const createMutation = useCreateRole()
+  const { session, loading: sessionLoading } = useSession()
+  const canCreate = hasPermissionForSession(session, PERMISSIONS.ROLES.CREATE)
 
   const form = useForm<z.infer<typeof roleSchema>>({
     resolver: zodResolver(roleSchema),
@@ -67,6 +71,14 @@ export function CreateRolePage() {
   })
 
   const onSubmit = (data: z.infer<typeof roleSchema>) => {
+    if (!canCreate) {
+      toast({
+        title: "Forbidden",
+        description: "You don't have permission to create roles.",
+        variant: "destructive",
+      })
+      return
+    }
     const roleData: Omit<Role, "id" | "createdAt" | "updatedAt"> = {
       roleName: data.roleName,
       description: data.description || undefined,
@@ -101,6 +113,12 @@ export function CreateRolePage() {
           { label: "Create Role" },
         ]}
       />
+
+      {!sessionLoading && !canCreate ? (
+        <div className="text-center py-8 text-muted-foreground">
+          You don&apos;t have permission to create roles.
+        </div>
+      ) : null}
 
       <GlassCard variant="default" className="max-w-4xl">
         <GlassCardHeader>
