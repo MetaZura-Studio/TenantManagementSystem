@@ -1,0 +1,72 @@
+# Dev3 First Checkpoint - Files and Info
+
+## What files I have worked on (list only)
+- `app/api/invoices/_pdf.ts`
+- `app/api/invoices/_store.ts`
+- `app/api/invoices/route.ts`
+- `app/api/invoices/[invoiceId]/route.ts`
+- `app/api/invoices/[invoiceId]/lines/route.ts`
+- `app/api/invoices/[invoiceId]/lines/[lineId]/route.ts`
+- `app/api/invoices/[invoiceId]/pdf/route.ts`
+- `app/api/invoices/[invoiceId]/send/route.ts`
+- `app/api/payments/_store.ts`
+- `app/api/payments/route.ts`
+- `app/api/payments/[paymentId]/route.ts`
+- `lib/api/invoices.api.ts`
+- `lib/api/invoice-lines.api.ts`
+- `lib/api/payments.api.ts`
+- `features/invoices/hooks/use-invoice-lines.ts`
+- `features/invoices/pages/CreateInvoicePage.tsx`
+- `features/invoices/pages/EditInvoicePage.tsx`
+- `features/invoices/pages/InvoiceDetailPage.tsx`
+- `features/invoices/pages/InvoicesListPage.tsx`
+
+## What is working on mockup now and what is required for production for my part/job
+
+### Working now (mockup / local in-memory)
+- Invoices CRUD API routes are implemented and used by UI.
+- Invoice lines CRUD API routes are implemented and used by UI.
+- Payments CRUD API routes are implemented and used by UI.
+- Payment success updates invoice financial state (`paidAmount`, `amountDue`, `status`).
+- Invoice send flow is implemented:
+  - Send method endpoint (`email` / `whatsapp` / `export`)
+  - PDF export endpoint
+  - UI send dialog wired to backend endpoint and PDF download/open
+- Invoice TODOs for send actions in create page are removed.
+- RBAC permission checks are applied on invoice/payment routes using platform auth helpers.
+
+### Required for production (Dev3 scope)
+- Replace in-memory stores (`app/api/invoices/_store.ts`, `app/api/payments/_store.ts`) with MySQL-backed persistence.
+- Add DB transactions for payment-create/update/delete + invoice recompute.
+- Add robust server-side validation (schema validation at API boundary, not UI-only assumptions).
+- Add audit logging for:
+  - invoice create/update/delete
+  - payment create/update/delete
+  - invoice send/export actions
+- Replace basic PDF generator with production-grade PDF template engine and finalized branding layout.
+- Implement real delivery providers for send flow:
+  - Email service integration
+  - WhatsApp provider integration (if approved)
+- Add retry/error observability for send pipeline and export/download failures.
+- Add automated integration tests and e2e tests for invoice-payment lifecycle and send flow.
+
+## Any related or required information for Dev 1 and Dev 2 to know
+
+### For Dev 1 (Platform/Security)
+- Invoice and payment APIs are protected with permission checks from `app/api/_platform/auth`.
+- Required permission keys used:
+  - `invoices:view`, `invoices:create`, `invoices:update`, `invoices:delete`
+  - `payments:view`, `payments:create`, `payments:update`, `payments:delete`
+- Please confirm final RBAC matrix for send/export behavior:
+  - whether send/export should use `invoices:update` or separate permissions (e.g. `invoices:send`, `invoices:export`).
+- API error contract currently follows `jsonError/jsonOk` from platform helpers.
+
+### For Dev 2 (Commercial Core)
+- Payments depend on valid `invoiceId`; payment create fails when invoice does not exist.
+- Invoice totals/status are recalculated from successful payments only.
+- Current recompute behavior:
+  - `amountDue = max(totalAmount - successfulPaymentsSum, 0)`
+  - status transitions to `PARTIALLY_PAID` or `PAID` based on paid amount
+- Ensure subscription/plan pricing writes correct invoice amounts (`totalAmount`, taxes, discounts) expected by finance flow.
+- If commercial lifecycle adds new invoice statuses/rules, coordinate update in finance recompute logic.
+

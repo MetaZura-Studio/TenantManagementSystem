@@ -28,16 +28,20 @@ export function useCreateInvoiceLine() {
 export function useUpdateInvoiceLine() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<InvoiceLine> }) =>
-      invoiceLinesApi.update(id, updates),
+    mutationFn: ({
+      invoiceId,
+      lineId,
+      updates,
+    }: {
+      invoiceId: string
+      lineId: string
+      updates: Partial<InvoiceLine>
+    }) => invoiceLinesApi.update({ invoiceId, lineId, updates }),
     onSuccess: (_, variables) => {
-      const line = variables.updates
-      if (line?.invoiceId) {
-        queryClient.invalidateQueries({
-          queryKey: [...queryKeys.invoices.detail(line.invoiceId), "lines"],
-        })
-        queryClient.invalidateQueries({ queryKey: queryKeys.invoices.detail(line.invoiceId) })
-      }
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.invoices.detail(variables.invoiceId), "lines"],
+      })
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.detail(variables.invoiceId) })
     },
   })
 }
@@ -45,8 +49,8 @@ export function useUpdateInvoiceLine() {
 export function useDeleteInvoiceLine() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, invoiceId }: { id: string; invoiceId: string }) =>
-      invoiceLinesApi.delete(id),
+    mutationFn: ({ invoiceId, lineId }: { invoiceId: string; lineId: string }) =>
+      invoiceLinesApi.delete({ invoiceId, lineId }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: [...queryKeys.invoices.detail(variables.invoiceId), "lines"],

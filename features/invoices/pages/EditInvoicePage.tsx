@@ -28,12 +28,22 @@ import { useInvoice, useUpdateInvoice } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { useSubscriptions } from "@/features/tenant-subscriptions/hooks"
 import { useCurrencies } from "@/features/currency/hooks"
-import { invoiceSchema } from "../schemas"
 import { z } from "zod"
 
 interface EditInvoicePageProps {
   invoiceId: string
 }
+
+const editInvoiceSchema = z.object({
+  tenantId: z.string().min(1, "Tenant is required"),
+  subscriptionId: z.string().min(1, "Subscription is required"),
+  periodStart: z.string().min(1, "Period start is required"),
+  periodEnd: z.string().min(1, "Period end is required"),
+  issueDate: z.string().min(1, "Issue date is required"),
+  dueDate: z.string().min(1, "Due date is required"),
+  currencyCode: z.string().min(1, "Currency is required"),
+  notes: z.string().optional(),
+})
 
 export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
   const router = useRouter()
@@ -43,8 +53,8 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
   const { data: currencies = [] } = useCurrencies()
   const updateMutation = useUpdateInvoice()
 
-  const form = useForm<z.infer<typeof invoiceSchema>>({
-    resolver: zodResolver(invoiceSchema),
+  const form = useForm<z.infer<typeof editInvoiceSchema>>({
+    resolver: zodResolver(editInvoiceSchema),
     values: invoice
       ? {
           tenantId: invoice.tenantId,
@@ -53,13 +63,13 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
           periodEnd: invoice.periodEnd,
           issueDate: invoice.issueDate,
           dueDate: invoice.dueDate,
-          currency: invoice.currency,
+          currencyCode: invoice.currencyCode,
           notes: invoice.notes || "",
         }
       : undefined,
   })
 
-  const onSubmit = (data: z.infer<typeof invoiceSchema>) => {
+  const onSubmit = (data: z.infer<typeof editInvoiceSchema>) => {
     updateMutation.mutate(
       {
         id: invoiceId,
@@ -70,7 +80,7 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
           periodEnd: data.periodEnd,
           issueDate: data.issueDate,
           dueDate: data.dueDate,
-          currency: data.currency,
+          currencyCode: data.currencyCode,
           notes: data.notes || undefined,
         },
       },
@@ -105,7 +115,7 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
     <>
       <PageHeader
         title="Edit Invoice"
-        subtitle={invoice.invoiceNumber}
+        subtitle={invoice.invoiceCode}
         breadcrumbs={[
           { label: "Invoice Management", href: "/invoices" },
           { label: "Invoice Details", href: `/invoices/${invoiceId}` },
@@ -229,7 +239,7 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
 
                 <FormField
                   control={form.control}
-                  name="currency"
+                  name="currencyCode"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>

@@ -51,27 +51,27 @@ export function InvoicesListPage() {
 
   const columns: ColumnDef<Invoice>[] = [
     {
-      accessorKey: "invoiceNumber",
-      header: "Invoice Number",
+      accessorKey: "invoiceCode",
+      header: "Invoice Code",
     },
     {
       accessorKey: "tenantId",
       header: "Tenant ID",
     },
     {
-      accessorKey: "invoiceDate",
-      header: "Invoice Date",
+      accessorKey: "issueDate",
+      header: "Issue Date",
     },
     {
       accessorKey: "dueDate",
       header: "Due Date",
     },
     {
-      accessorKey: "total",
+      accessorKey: "totalAmount",
       header: "Total Amount",
       cell: ({ row }) => {
         const invoice = row.original
-        return `${invoice.currency} ${invoice.total.toFixed(2)}`
+        return `${invoice.currencyCode} ${invoice.totalAmount.toFixed(2)}`
       },
     },
     {

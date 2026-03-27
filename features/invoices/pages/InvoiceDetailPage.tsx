@@ -30,7 +30,7 @@ export function InvoiceDetailPage({ invoiceId }: InvoiceDetailPageProps) {
     <>
       <PageHeader
         title="Invoice Details"
-        subtitle={invoice.invoiceNumber}
+        subtitle={invoice.invoiceCode}
         breadcrumbs={[
           { label: "Invoice Management", href: "/invoices" },
           { label: "Invoice Details" },
@@ -60,7 +60,7 @@ export function InvoiceDetailPage({ invoiceId }: InvoiceDetailPageProps) {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <p className="text-sm text-muted-foreground">Invoice Number</p>
-                <p className="text-lg font-medium">{invoice.invoiceNumber}</p>
+                <p className="text-lg font-medium">{invoice.invoiceCode}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
@@ -77,25 +77,25 @@ export function InvoiceDetailPage({ invoiceId }: InvoiceDetailPageProps) {
               <div>
                 <p className="text-sm text-muted-foreground">Subtotal</p>
                 <p className="text-lg font-medium">
-                  {invoice.currency} {invoice.subtotal.toFixed(2)}
+                  {invoice.currencyCode} {(invoice.totalAmount - invoice.taxAmount + invoice.discountAmount).toFixed(2)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total</p>
                 <p className="text-lg font-medium">
-                  {invoice.currency} {invoice.total.toFixed(2)}
+                  {invoice.currencyCode} {invoice.totalAmount.toFixed(2)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Amount Paid</p>
                 <p className="text-lg font-medium">
-                  {invoice.currency} {invoice.amountPaid.toFixed(2)}
+                  {invoice.currencyCode} {invoice.paidAmount.toFixed(2)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Amount Due</p>
                 <p className="text-lg font-medium">
-                  {invoice.currency} {invoice.amountDue.toFixed(2)}
+                  {invoice.currencyCode} {invoice.amountDue.toFixed(2)}
                 </p>
               </div>
             </div>
@@ -114,11 +114,11 @@ export function InvoiceDetailPage({ invoiceId }: InvoiceDetailPageProps) {
                     <div>
                       <p className="font-medium">{line.description}</p>
                       <p className="text-sm text-muted-foreground">
-                        {line.quantity} x {invoice.currency} {line.unitPrice.toFixed(2)}
+                        {line.quantity} x {invoice.currencyCode} {line.unitPrice.toFixed(2)}
                       </p>
                     </div>
                     <p className="font-medium">
-                      {invoice.currency} {line.lineAmount.toFixed(2)}
+                      {invoice.currencyCode} {(line.quantity * line.unitPrice).toFixed(2)}
                     </p>
                   </div>
                 ))}

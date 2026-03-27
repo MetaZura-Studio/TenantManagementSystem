@@ -1,38 +1,45 @@
-import { useStore } from "../store"
 import type { Invoice } from "@/features/invoices/types"
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, init)
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as any
+    const message = data?.error?.message || `Request failed (${res.status})`
+    throw new Error(message)
+  }
+  return (await res.json()) as T
+}
 
 export const invoicesApi = {
   getAll: async (): Promise<Invoice[]> => {
-    await delay(300)
-    return useStore.getState().invoices
+    return fetchJson<Invoice[]>("/api/invoices", { method: "GET" })
   },
   getById: async (id: string): Promise<Invoice | undefined> => {
-    await delay(200)
-    return useStore.getState().invoices.find((i) => i.id === id)
+    return fetchJson<Invoice>(`/api/invoices/${encodeURIComponent(id)}`, {
+      method: "GET",
+    }).catch((e) => {
+      // Preserve previous API shape (undefined for not found).
+      if (String(e?.message || "").toLowerCase().includes("not found")) return undefined
+      throw e
+    })
   },
   create: async (invoice: Omit<Invoice, "id" | "createdAt" | "updatedAt">): Promise<Invoice> => {
-    await delay(400)
-    const newInvoice: Invoice = {
-      ...invoice,
-      id: `invoice-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-    useStore.getState().addInvoice(newInvoice)
-    return newInvoice
+    return fetchJson<Invoice>("/api/invoices", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(invoice),
+    })
   },
   update: async (id: string, updates: Partial<Invoice>): Promise<Invoice> => {
-    await delay(400)
-    const invoice = useStore.getState().invoices.find((i) => i.id === id)
-    if (!invoice) throw new Error("Invoice not found")
-    const updated = { ...invoice, ...updates, updatedAt: new Date().toISOString() }
-    useStore.getState().updateInvoice(id, updated)
-    return updated
+    return fetchJson<Invoice>(`/api/invoices/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(updates),
+    })
   },
   delete: async (id: string): Promise<void> => {
-    await delay(300)
-    useStore.getState().deleteInvoice(id)
+    await fetchJson<{ ok: true }>(`/api/invoices/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    })
   },
 }

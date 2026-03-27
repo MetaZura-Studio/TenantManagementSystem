@@ -1,38 +1,44 @@
-import { useStore } from "../store"
 import type { Payment } from "@/features/payments/types"
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, init)
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as any
+    const message = data?.error?.message || `Request failed (${res.status})`
+    throw new Error(message)
+  }
+  return (await res.json()) as T
+}
 
 export const paymentsApi = {
   getAll: async (): Promise<Payment[]> => {
-    await delay(300)
-    return useStore.getState().payments
+    return fetchJson<Payment[]>("/api/payments", { method: "GET" })
   },
   getById: async (id: string): Promise<Payment | undefined> => {
-    await delay(200)
-    return useStore.getState().payments.find((p) => p.id === id)
+    return fetchJson<Payment>(`/api/payments/${encodeURIComponent(id)}`, {
+      method: "GET",
+    }).catch((e) => {
+      if (String(e?.message || "").toLowerCase().includes("not found")) return undefined
+      throw e
+    })
   },
   create: async (payment: Omit<Payment, "id" | "createdAt" | "updatedAt">): Promise<Payment> => {
-    await delay(400)
-    const newPayment: Payment = {
-      ...payment,
-      id: `payment-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-    useStore.getState().addPayment(newPayment)
-    return newPayment
+    return fetchJson<Payment>("/api/payments", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payment),
+    })
   },
   update: async (id: string, updates: Partial<Payment>): Promise<Payment> => {
-    await delay(400)
-    const payment = useStore.getState().payments.find((p) => p.id === id)
-    if (!payment) throw new Error("Payment not found")
-    const updated = { ...payment, ...updates, updatedAt: new Date().toISOString() }
-    useStore.getState().updatePayment(id, updated)
-    return updated
+    return fetchJson<Payment>(`/api/payments/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(updates),
+    })
   },
   delete: async (id: string): Promise<void> => {
-    await delay(300)
-    useStore.getState().deletePayment(id)
+    await fetchJson<{ ok: true }>(`/api/payments/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    })
   },
 }

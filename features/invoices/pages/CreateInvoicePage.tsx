@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -37,10 +37,20 @@ import { useCreateInvoice } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { useSubscriptions } from "@/features/tenant-subscriptions/hooks"
 import { useCurrencies } from "@/features/currency/hooks"
-import { invoiceSchema } from "../schemas"
 import type { Invoice } from "../types"
 import { z } from "zod"
 import { Mail, MessageCircle } from "lucide-react"
+
+const createInvoiceSchema = z.object({
+  tenantId: z.string().min(1, "Tenant is required"),
+  subscriptionId: z.string().min(1, "Subscription is required"),
+  periodStart: z.string().min(1, "Period start is required"),
+  periodEnd: z.string().min(1, "Period end is required"),
+  issueDate: z.string().min(1, "Issue date is required"),
+  dueDate: z.string().min(1, "Due date is required"),
+  currencyCode: z.string().min(1, "Currency is required"),
+  notes: z.string().optional(),
+})
 
 export function CreateInvoicePage() {
   const router = useRouter()
@@ -51,39 +61,36 @@ export function CreateInvoicePage() {
   const [sendDialogOpen, setSendDialogOpen] = useState(false)
   const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null)
 
-  const form = useForm<z.infer<typeof invoiceSchema>>({
-    resolver: zodResolver(invoiceSchema),
+  const form = useForm<z.infer<typeof createInvoiceSchema>>({
+    resolver: zodResolver(createInvoiceSchema),
     defaultValues: {
       tenantId: "",
       subscriptionId: "",
-      invoiceSequence: "001",
-      invoiceNumber: Date.now().toString().slice(-6),
       periodStart: new Date().toISOString().split("T")[0],
       periodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       issueDate: new Date().toISOString().split("T")[0],
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      currency: "USD",
+      currencyCode: "USD",
       notes: "",
     },
   })
 
-  const onSubmit = (data: z.infer<typeof invoiceSchema>) => {
-    const fullInvoiceNumber = `${data.invoiceSequence}${data.invoiceNumber}`
+  const nextInvoiceCode = useMemo(() => `INV-${Date.now().toString().slice(-8)}`, [])
+
+  const onSubmit = (data: z.infer<typeof createInvoiceSchema>) => {
     const invoiceData: Omit<Invoice, "id" | "createdAt" | "updatedAt"> = {
-      invoiceId: `INV-${fullInvoiceNumber}`,
-      invoiceNumber: `INV-${fullInvoiceNumber}`,
+      invoiceCode: nextInvoiceCode,
       tenantId: data.tenantId,
       subscriptionId: data.subscriptionId,
       periodStart: data.periodStart,
       periodEnd: data.periodEnd,
       issueDate: data.issueDate,
       dueDate: data.dueDate,
-      currency: data.currency,
-      subtotal: 0,
-      discount: 0,
-      tax: 0,
-      total: 0,
-      amountPaid: 0,
+      currencyCode: data.currencyCode,
+      totalAmount: 0,
+      taxAmount: 0,
+      discountAmount: 0,
+      paidAmount: 0,
       amountDue: 0,
       status: "ISSUED",
       notes: data.notes || undefined,
@@ -103,27 +110,40 @@ export function CreateInvoicePage() {
     })
   }
 
-  const handleSendViaEmail = () => {
+  async function sendInvoice(method: "email" | "whatsapp") {
     if (!createdInvoice) return
-    // TODO: Implement email sending logic
-    toast({
-      title: "Email Sent",
-      description: `Invoice ${createdInvoice.invoiceNumber} sent via email as PDF`,
-    })
-    setSendDialogOpen(false)
-    router.push("/invoices")
+    try {
+      const res = await fetch(
+        `/api/invoices/${encodeURIComponent(createdInvoice.id)}/send`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ method }),
+        }
+      )
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as any
+        throw new Error(data?.error?.message || "Failed to send invoice")
+      }
+      const data = (await res.json()) as { pdfUrl?: string }
+      if (data.pdfUrl) window.open(data.pdfUrl, "_blank", "noopener,noreferrer")
+      toast({
+        title: method === "email" ? "Email Sent" : "WhatsApp Message Sent",
+        description: `Invoice ${createdInvoice.invoiceCode} exported as PDF and marked as sent`,
+      })
+      setSendDialogOpen(false)
+      router.push("/invoices")
+    } catch (e: any) {
+      toast({
+        title: "Error",
+        description: e?.message || "Failed to send invoice",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleSendViaWhatsApp = () => {
-    if (!createdInvoice) return
-    // TODO: Implement WhatsApp sending logic
-    toast({
-      title: "WhatsApp Message Sent",
-      description: `Invoice ${createdInvoice.invoiceNumber} sent via WhatsApp as PDF`,
-    })
-    setSendDialogOpen(false)
-    router.push("/invoices")
-  }
+  const handleSendViaEmail = () => sendInvoice("email")
+  const handleSendViaWhatsApp = () => sendInvoice("whatsapp")
 
   return (
     <>
@@ -196,51 +216,6 @@ export function CreateInvoicePage() {
 
                 <FormField
                   control={form.control}
-                  name="invoiceSequence"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Invoice Sequence (3 digits)</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="001"
-                          maxLength={3}
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, "").slice(0, 3)
-                            field.onChange(value)
-                          }}
-                        />
-                      </FormControl>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Enter 3 digits that will prefix the invoice number
-                      </p>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="invoiceNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Invoice Number</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter invoice number"
-                          {...field}
-                        />
-                      </FormControl>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Enter the invoice number (will be combined with sequence)
-                      </p>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="periodStart"
                   render={({ field }) => (
                     <FormItem>
@@ -297,7 +272,7 @@ export function CreateInvoicePage() {
 
                 <FormField
                   control={form.control}
-                  name="currency"
+                  name="currencyCode"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
@@ -359,7 +334,7 @@ export function CreateInvoicePage() {
           <DialogHeader>
             <DialogTitle>Send Invoice</DialogTitle>
             <DialogDescription>
-              Choose how you want to send invoice {createdInvoice?.invoiceNumber} to the tenant.
+              Choose how you want to send invoice {createdInvoice?.invoiceCode} to the tenant.
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-4 py-4">
