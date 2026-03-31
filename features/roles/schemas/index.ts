@@ -21,6 +21,9 @@ export const baseRoleSchema = z.object({
   permissions: z.array(permissionSchema),
 });
 
+// Schema used directly by the role create/edit forms
+export const roleSchema = baseRoleSchema;
+
 // CREATE schema
 export const createRoleSchema = baseRoleSchema;
 

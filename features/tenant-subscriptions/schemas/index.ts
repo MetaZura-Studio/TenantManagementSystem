@@ -6,35 +6,57 @@ export const subscriptionStatusEnum = z.enum([
   "SUSPENDED",
   "CANCELLED",
   "EXPIRED",
+  // UI/Frontend statuses
+  "Active",
+  "Pending",
+  "Expired",
+  "TRIALING",
+  "PAST_DUE",
+  "CANCELED",
 ])
 
 // Base schema (shared fields)
 export const baseSubscriptionSchema = z.object({
-  subscriptionCode: z.string().min(1, "Subscription code is required"),
+  subscriptionId: z.string().min(1, "Subscription ID is required"),
   tenantId: z.string().min(1, "Tenant is required"),
   planId: z.string().min(1, "Plan is required"),
   status: subscriptionStatusEnum,
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().optional(),
-  currentPeriodStart: z.string().optional(),
-  currentPeriodEnd: z.string().optional(),
-  billingCurrencyCode: z.string().min(1, "Billing currency code is required"),
+  currentPeriodStart: z.string().min(1, "Current period start is required"),
+  currentPeriodEnd: z.string().min(1, "Current period end is required"),
+
+  // Billing / pricing
+  billingCurrency: z.string().min(1, "Billing currency is required"),
   unitPrice: z.number().min(0, "Unit price must be non-negative"),
+  discountAmount: z.number().min(0, "Discount amount must be non-negative"),
+  discountPercent: z.number().min(0, "Discount percent must be non-negative"),
   autoRenew: z.boolean(),
-  overrideNotes: z.string().optional(),
+
+  cancelAtPeriodEnd: z.boolean(),
+  canceledAt: z.string().optional(),
+  trialStart: z.string().optional(),
+  trialEnd: z.string().optional(),
+
   notes: z.string().optional(),
+})
+
+// Schema used directly by Create/Edit subscription forms.
+// This intentionally excludes `subscriptionId` (system-generated / route identity).
+export const subscriptionSchema = baseSubscriptionSchema.omit({
+  subscriptionId: true,
 })
 
 // CREATE schema
 export const createTenantSubscriptionSchema = baseSubscriptionSchema.omit({
-  subscriptionCode: true, // system generated
+  subscriptionId: true, // system generated
 })
 
 // UPDATE schema (partial)
 export const updateTenantSubscriptionSchema = baseSubscriptionSchema
   .partial()
   .extend({
-    id: z.string().min(1, "Subscription ID is required"),
+    id: z.string().min(1, "Subscription internal id is required"),
   })
 
 // FILTER schema (for list page)

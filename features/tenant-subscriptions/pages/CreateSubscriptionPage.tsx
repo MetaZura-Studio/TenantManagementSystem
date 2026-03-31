@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useRef } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -64,97 +64,41 @@ export function CreateSubscriptionPage() {
   })
 
   const pricingPlans: PricingPlanCard[] = useMemo(() => {
-    // Hardcoded plans matching the screenshot exactly
-    return [
-      {
-        id: "starter",
-        name: "STARTER",
-        price: 50,
-        yearlyPrice: 480, // $50 * 12 * 0.8
-        period: "month",
-        features: [
-          "Up to 10 projects",
-          "Basic analytics",
-          "48-hour support response time",
-          "Limited API access",
-          "Community support",
-        ],
-        description: "Perfect for individuals and small projects",
-        isPopular: false,
-        currency: "USD",
-      },
-      {
-        id: "professional",
-        name: "PROFESSIONAL",
-        price: 99,
-        yearlyPrice: 950, // $99 * 12 * 0.8
-        period: "month",
-        features: [
-          "Unlimited projects",
-          "Advanced analytics",
-          "24-hour support response time",
-          "Full API access",
-          "Priority support",
-          "Team collaboration",
-          "Custom integrations",
-        ],
-        description: "Ideal for growing teams and businesses",
-        isPopular: false,
-        currency: "USD",
-      },
-      {
-        id: "enterprise",
-        name: "ENTERPRISE",
-        price: 299,
-        yearlyPrice: 2870, // $299 * 12 * 0.8
-        period: "month",
-        features: [
-          "Everything in Professional",
-          "Custom solutions",
-          "Dedicated account manager",
-          "1-hour support response time",
-          "SSO Authentication",
-          "Advanced security",
-          "Custom contracts",
-          "SLA agreement",
-        ],
-        description: "For large organizations with specific needs",
-        isPopular: false,
-        currency: "USD",
-      },
-    ]
-  }, [])
+    return plans.map((plan) => {
+      let features: string[] = []
+      if (plan.featuresJson) {
+        try {
+          const parsed = JSON.parse(plan.featuresJson)
+          if (Array.isArray(parsed)) features = parsed.map((x) => String(x))
+        } catch {
+          // ignore bad JSON; show empty features list
+        }
+      }
 
-  // Mapping between pricing card IDs and database plan names
-  const planNameMapping: Record<string, string> = {
-    starter: "Basic Plan",
-    professional: "Pro Plan",
-    enterprise: "Enterprise Plan",
-  }
+      return {
+        id: plan.id,
+        name: (plan.nameEn || plan.planCode).toUpperCase(),
+        price: Number(plan.monthlyPrice ?? 0),
+        yearlyPrice: Number(plan.yearlyPrice ?? 0),
+        period: "month",
+        features,
+        description: plan.description || "",
+        isPopular: false,
+        currency: plan.currencyCode,
+      } satisfies PricingPlanCard
+    })
+  }, [plans])
 
   const handleSelectPlan = (planId: string) => {
     setSelectedPlanId(planId)
-    const pricingPlan = pricingPlans.find((p) => p.id === planId)
-    if (!pricingPlan) return
+    const plan = plans.find((p) => p.id === planId)
+    if (!plan) return
 
-    // Map pricing plan ID to database plan name
-    const mappedPlanName = planNameMapping[planId.toLowerCase()]
-    
-    // Try to find matching plan in database
-    const plan = mappedPlanName 
-      ? plans.find((p) => p.planName === mappedPlanName)
-      : plans.find((p) => p.planName.toLowerCase().includes(pricingPlan.name.toLowerCase()) || pricingPlan.name.toLowerCase().includes(p.planName.toLowerCase()))
-    
-    if (plan) {
-      form.setValue("planId", plan.id, { shouldDirty: true, shouldValidate: true })
-      form.setValue("billingCurrency", plan.currency || pricingPlan.currency, { shouldDirty: true, shouldValidate: true })
-      form.setValue("unitPrice", Number(plan.price ?? pricingPlan.price), { shouldDirty: true, shouldValidate: true })
-    } else {
-      // Fallback: use pricing plan data directly
-      form.setValue("billingCurrency", pricingPlan.currency, { shouldDirty: true, shouldValidate: true })
-      form.setValue("unitPrice", pricingPlan.price, { shouldDirty: true, shouldValidate: true })
-      // Note: planId will need to be selected manually if no match found
-    }
+    form.setValue("planId", plan.id, { shouldDirty: true, shouldValidate: true })
+    form.setValue("billingCurrency", plan.currencyCode, { shouldDirty: true, shouldValidate: true })
+    const unitPrice =
+      plan.billingCycle === "Yearly" ? Number(plan.yearlyPrice ?? 0) : Number(plan.monthlyPrice ?? 0)
+    form.setValue("unitPrice", unitPrice, { shouldDirty: true, shouldValidate: true })
 
     // Scroll to subscription form after a short delay to ensure state updates
     setTimeout(() => {
@@ -268,16 +212,8 @@ export function CreateSubscriptionPage() {
                   control={form.control}
                   name="planId"
                   render={({ field }) => {
-                    const selectedPricingPlan = pricingPlans.find((p) => p.id === selectedPlanId)
-                    const mappedPlanName = selectedPricingPlan ? planNameMapping[selectedPricingPlan.id.toLowerCase()] : null
-                    const matchedPlan = mappedPlanName 
-                      ? plans.find((p) => p.planName === mappedPlanName)
-                      : selectedPricingPlan
-                        ? plans.find((p) => p.planName.toLowerCase().includes(selectedPricingPlan.name.toLowerCase()) || selectedPricingPlan.name.toLowerCase().includes(p.planName.toLowerCase()))
-                        : null
-                    
-                    // Use matched plan ID if available, otherwise use field value
-                    const displayValue = matchedPlan?.id || field.value || ""
+                    const matchedPlan = plans.find((p) => p.id === (field.value || "")) || null
+                    const displayValue = field.value || ""
                     
                     return (
                       <FormItem>
@@ -290,21 +226,21 @@ export function CreateSubscriptionPage() {
                           <FormControl>
                             <SelectTrigger className={selectedPlanId ? "bg-muted cursor-not-allowed" : ""}>
                               <SelectValue placeholder="Select plan">
-                                {matchedPlan ? matchedPlan.planName : "Select plan"}
+                                {matchedPlan ? matchedPlan.nameEn : "Select plan"}
                               </SelectValue>
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             {plans.map((plan) => (
                               <SelectItem key={plan.id} value={plan.id}>
-                                {plan.planName}
+                                {plan.nameEn}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         {selectedPlanId && matchedPlan && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Auto-filled from selected plan ({selectedPricingPlan?.name})
+                            Auto-filled from selected plan
                           </p>
                         )}
                         <FormMessage />

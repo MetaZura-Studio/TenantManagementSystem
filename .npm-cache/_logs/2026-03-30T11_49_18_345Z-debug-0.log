@@ -1,0 +1,250 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@10.9.2
+2 info using node@v22.14.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/hussnainnawaz/Desktop/TenantManagementSystem/.npmrc
+5 silly config load:file:/Users/hussnainnawaz/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm install mysql2
+8 verbose argv "install" "mysql2" "--cache" ".npm-cache" "--no-audit" "--no-fund"
+9 verbose logfile logs-max:10 dir:/Users/hussnainnawaz/Desktop/TenantManagementSystem/.npm-cache/_logs/2026-03-30T11_49_18_345Z-
+10 verbose logfile /Users/hussnainnawaz/Desktop/TenantManagementSystem/.npm-cache/_logs/2026-03-30T11_49_18_345Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly idealTree buildDeps
+14 silly fetch manifest mysql2@*
+15 silly packumentCache full:https://registry.npmjs.org/mysql2 cache-miss
+16 http fetch GET 200 https://registry.npmjs.org/mysql2 605ms (cache miss)
+17 silly packumentCache full:https://registry.npmjs.org/mysql2 set size:undefined disposed:false
+18 silly fetch manifest @types/node@^20
+19 silly packumentCache full:https://registry.npmjs.org/@types%2fnode cache-miss
+20 http fetch GET 200 https://registry.npmjs.org/@types%2fnode 513ms (cache miss)
+21 silly packumentCache full:https://registry.npmjs.org/@types%2fnode set size:undefined disposed:false
+22 silly placeDep ROOT mysql2@3.20.0 OK for: tenant-management-admin@0.1.0 want: *
+23 silly fetch manifest aws-ssl-profiles@^1.1.2
+24 silly packumentCache full:https://registry.npmjs.org/aws-ssl-profiles cache-miss
+25 silly fetch manifest denque@^2.1.0
+26 silly packumentCache full:https://registry.npmjs.org/denque cache-miss
+27 silly fetch manifest generate-function@^2.3.1
+28 silly packumentCache full:https://registry.npmjs.org/generate-function cache-miss
+29 silly fetch manifest iconv-lite@^0.7.2
+30 silly packumentCache full:https://registry.npmjs.org/iconv-lite cache-miss
+31 silly fetch manifest long@^5.3.2
+32 silly packumentCache full:https://registry.npmjs.org/long cache-miss
+33 silly fetch manifest lru.min@^1.1.4
+34 silly packumentCache full:https://registry.npmjs.org/lru.min cache-miss
+35 silly fetch manifest named-placeholders@^1.1.6
+36 silly packumentCache full:https://registry.npmjs.org/named-placeholders cache-miss
+37 silly fetch manifest sql-escaper@^1.3.3
+38 silly packumentCache full:https://registry.npmjs.org/sql-escaper cache-miss
+39 http fetch GET 200 https://registry.npmjs.org/aws-ssl-profiles 144ms (cache miss)
+40 silly packumentCache full:https://registry.npmjs.org/aws-ssl-profiles set size:undefined disposed:false
+41 http fetch GET 200 https://registry.npmjs.org/lru.min 442ms (cache miss)
+42 silly packumentCache full:https://registry.npmjs.org/lru.min set size:undefined disposed:false
+43 http fetch GET 200 https://registry.npmjs.org/denque 443ms (cache miss)
+44 silly packumentCache full:https://registry.npmjs.org/denque set size:undefined disposed:false
+45 http fetch GET 200 https://registry.npmjs.org/sql-escaper 443ms (cache miss)
+46 silly packumentCache full:https://registry.npmjs.org/sql-escaper set size:undefined disposed:false
+47 http fetch GET 200 https://registry.npmjs.org/generate-function 445ms (cache miss)
+48 silly packumentCache full:https://registry.npmjs.org/generate-function set size:undefined disposed:false
+49 http fetch GET 200 https://registry.npmjs.org/long 456ms (cache miss)
+50 silly packumentCache full:https://registry.npmjs.org/long set size:undefined disposed:false
+51 http fetch GET 200 https://registry.npmjs.org/named-placeholders 467ms (cache miss)
+52 silly packumentCache full:https://registry.npmjs.org/named-placeholders set size:undefined disposed:false
+53 http fetch GET 200 https://registry.npmjs.org/iconv-lite 474ms (cache miss)
+54 silly packumentCache full:https://registry.npmjs.org/iconv-lite set size:undefined disposed:false
+55 silly placeDep ROOT aws-ssl-profiles@1.1.2 OK for: mysql2@3.20.0 want: ^1.1.2
+56 silly placeDep ROOT denque@2.1.0 OK for: mysql2@3.20.0 want: ^2.1.0
+57 silly placeDep ROOT generate-function@2.3.1 OK for: mysql2@3.20.0 want: ^2.3.1
+58 silly placeDep ROOT iconv-lite@0.7.2 OK for: mysql2@3.20.0 want: ^0.7.2
+59 silly placeDep ROOT long@5.3.2 OK for: mysql2@3.20.0 want: ^5.3.2
+60 silly placeDep ROOT lru.min@1.1.4 OK for: mysql2@3.20.0 want: ^1.1.4
+61 silly placeDep ROOT named-placeholders@1.1.6 OK for: mysql2@3.20.0 want: ^1.1.6
+62 silly placeDep ROOT sql-escaper@1.3.3 OK for: mysql2@3.20.0 want: ^1.3.3
+63 silly fetch manifest is-property@^1.0.2
+64 silly packumentCache full:https://registry.npmjs.org/is-property cache-miss
+65 silly fetch manifest safer-buffer@>= 2.1.2 < 3.0.0
+66 silly packumentCache full:https://registry.npmjs.org/safer-buffer cache-miss
+67 http fetch GET 200 https://registry.npmjs.org/safer-buffer 133ms (cache miss)
+68 silly packumentCache full:https://registry.npmjs.org/safer-buffer set size:undefined disposed:false
+69 http fetch GET 200 https://registry.npmjs.org/is-property 140ms (cache miss)
+70 silly packumentCache full:https://registry.npmjs.org/is-property set size:undefined disposed:false
+71 silly placeDep ROOT is-property@1.0.2 OK for: generate-function@2.3.1 want: ^1.0.2
+72 silly placeDep ROOT safer-buffer@2.1.2 OK for: iconv-lite@0.7.2 want: >= 2.1.2 < 3.0.0
+73 silly reify moves {}
+74 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-win32-x64-msvc
+75 silly reify mark deleted [
+75 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-win32-x64-msvc'
+75 silly reify ]
+76 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-win32-ia32-msvc
+77 silly reify mark deleted [
+77 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-win32-ia32-msvc'
+77 silly reify ]
+78 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-win32-arm64-msvc
+79 silly reify mark deleted [
+79 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-win32-arm64-msvc'
+79 silly reify ]
+80 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-wasm32-wasi
+81 silly reify mark deleted [
+81 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-wasm32-wasi'
+81 silly reify ]
+82 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@napi-rs/wasm-runtime
+83 silly reify mark deleted [
+83 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@napi-rs/wasm-runtime'
+83 silly reify ]
+84 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@emnapi/core
+85 silly reify mark deleted [
+85 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@emnapi/core'
+85 silly reify ]
+86 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@emnapi/runtime
+87 silly reify mark deleted [
+87 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@emnapi/runtime'
+87 silly reify ]
+88 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@tybys/wasm-util
+89 silly reify mark deleted [
+89 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@tybys/wasm-util'
+89 silly reify ]
+90 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@emnapi/wasi-threads
+91 silly reify mark deleted [
+91 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@emnapi/wasi-threads'
+91 silly reify ]
+92 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-x64-musl
+93 silly reify mark deleted [
+93 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-x64-musl'
+93 silly reify ]
+94 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-x64-gnu
+95 silly reify mark deleted [
+95 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-x64-gnu'
+95 silly reify ]
+96 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-s390x-gnu
+97 silly reify mark deleted [
+97 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-s390x-gnu'
+97 silly reify ]
+98 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-riscv64-musl
+99 silly reify mark deleted [
+99 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-riscv64-musl'
+99 silly reify ]
+100 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-riscv64-gnu
+101 silly reify mark deleted [
+101 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-riscv64-gnu'
+101 silly reify ]
+102 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-ppc64-gnu
+103 silly reify mark deleted [
+103 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-ppc64-gnu'
+103 silly reify ]
+104 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-arm64-musl
+105 silly reify mark deleted [
+105 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-arm64-musl'
+105 silly reify ]
+106 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-arm64-gnu
+107 silly reify mark deleted [
+107 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-arm64-gnu'
+107 silly reify ]
+108 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-arm-musleabihf
+109 silly reify mark deleted [
+109 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-arm-musleabihf'
+109 silly reify ]
+110 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-arm-gnueabihf
+111 silly reify mark deleted [
+111 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-linux-arm-gnueabihf'
+111 silly reify ]
+112 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-freebsd-x64
+113 silly reify mark deleted [
+113 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-freebsd-x64'
+113 silly reify ]
+114 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-darwin-x64
+115 silly reify mark deleted [
+115 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-darwin-x64'
+115 silly reify ]
+116 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-android-arm64
+117 silly reify mark deleted [
+117 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-android-arm64'
+117 silly reify ]
+118 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-android-arm-eabi
+119 silly reify mark deleted [
+119 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@unrs/resolver-binding-android-arm-eabi'
+119 silly reify ]
+120 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-win32-x64-msvc
+121 silly reify mark deleted [
+121 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-win32-x64-msvc'
+121 silly reify ]
+122 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-win32-ia32-msvc
+123 silly reify mark deleted [
+123 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-win32-ia32-msvc'
+123 silly reify ]
+124 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-win32-arm64-msvc
+125 silly reify mark deleted [
+125 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-win32-arm64-msvc'
+125 silly reify ]
+126 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-linux-x64-musl
+127 silly reify mark deleted [
+127 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-linux-x64-musl'
+127 silly reify ]
+128 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-linux-x64-gnu
+129 silly reify mark deleted [
+129 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-linux-x64-gnu'
+129 silly reify ]
+130 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-linux-arm64-musl
+131 silly reify mark deleted [
+131 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-linux-arm64-musl'
+131 silly reify ]
+132 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-linux-arm64-gnu
+133 silly reify mark deleted [
+133 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-linux-arm64-gnu'
+133 silly reify ]
+134 verbose reify failed optional dependency /Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-darwin-x64
+135 silly reify mark deleted [
+135 silly reify   '/Users/hussnainnawaz/Desktop/TenantManagementSystem/node_modules/@next/swc-darwin-x64'
+135 silly reify ]
+136 http cache @tybys/wasm-util@https://registry.npmjs.org/@tybys/wasm-util/-/wasm-util-0.10.1.tgz 1ms (cache hit)
+137 http cache @napi-rs/wasm-runtime@https://registry.npmjs.org/@napi-rs/wasm-runtime/-/wasm-runtime-0.2.12.tgz 0ms (cache hit)
+138 http cache @emnapi/wasi-threads@https://registry.npmjs.org/@emnapi/wasi-threads/-/wasi-threads-1.1.0.tgz 0ms (cache hit)
+139 silly tarball no local data for @tybys/wasm-util@https://registry.npmjs.org/@tybys/wasm-util/-/wasm-util-0.10.1.tgz. Extracting by manifest.
+140 http cache @emnapi/core@https://registry.npmjs.org/@emnapi/core/-/core-1.8.1.tgz 0ms (cache hit)
+141 http cache @emnapi/runtime@https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.8.1.tgz 0ms (cache hit)
+142 silly tarball no local data for @napi-rs/wasm-runtime@https://registry.npmjs.org/@napi-rs/wasm-runtime/-/wasm-runtime-0.2.12.tgz. Extracting by manifest.
+143 silly tarball no local data for @emnapi/wasi-threads@https://registry.npmjs.org/@emnapi/wasi-threads/-/wasi-threads-1.1.0.tgz. Extracting by manifest.
+144 silly tarball no local data for @emnapi/core@https://registry.npmjs.org/@emnapi/core/-/core-1.8.1.tgz. Extracting by manifest.
+145 silly tarball no local data for @emnapi/runtime@https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.8.1.tgz. Extracting by manifest.
+146 http fetch GET 200 https://registry.npmjs.org/@emnapi/wasi-threads/-/wasi-threads-1.1.0.tgz 165ms (cache miss)
+147 http fetch GET 200 https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.8.1.tgz 179ms (cache miss)
+148 http fetch GET 200 https://registry.npmjs.org/@tybys/wasm-util/-/wasm-util-0.10.1.tgz 276ms (cache miss)
+149 http fetch GET 200 https://registry.npmjs.org/@emnapi/core/-/core-1.8.1.tgz 353ms (cache miss)
+150 http fetch GET 200 https://registry.npmjs.org/@napi-rs/wasm-runtime/-/wasm-runtime-0.2.12.tgz 557ms (cache miss)
+151 silly ADD
+152 silly ADD
+153 silly ADD
+154 silly ADD
+155 silly ADD
+156 silly ADD
+157 silly ADD
+158 silly ADD
+159 silly ADD
+160 silly ADD
+161 silly ADD
+162 silly ADD
+163 silly ADD
+164 silly ADD
+165 silly ADD
+166 silly ADD
+167 silly ADD
+168 silly ADD
+169 silly ADD
+170 silly ADD
+171 silly ADD
+172 silly ADD
+173 silly ADD
+174 silly ADD
+175 silly ADD
+176 silly ADD
+177 silly ADD
+178 silly ADD
+179 silly ADD
+180 silly ADD
+181 silly ADD
+182 verbose cwd /Users/hussnainnawaz/Desktop/TenantManagementSystem
+183 verbose os Darwin 25.3.0
+184 verbose node v22.14.0
+185 verbose npm  v10.9.2
+186 verbose exit 0
+187 info ok

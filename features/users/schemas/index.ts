@@ -13,15 +13,18 @@ export const baseUserSchema = z.object({
   username: z.string().min(1, "Username is required"),
   email: z.string().email("Invalid email address"),
   mobile: z.string().min(1, "Mobile is required"),
+  // Password is allowed to be an empty string (used by edit form), but if it's non-empty it must be valid.
   password: z
-    .string()
-    .min(6, "Password must be at least 6 characters")
+    .union([z.string().min(6, "Password must be at least 6 characters"), z.literal("")])
     .optional(),
   status: userStatusEnum,
   address: z.string().optional(),
   zipCode: z.string().optional(),
   country: z.string().optional(),
 });
+
+// Schema used directly by the user create/edit forms.
+export const userSchema = baseUserSchema;
 
 // CREATE schema
 export const createUserSchema = baseUserSchema.extend({

@@ -40,15 +40,16 @@ export function CreatePlanPage() {
     resolver: zodResolver(planSchema),
     defaultValues: {
       planCode: "",
-      planName: "",
+      nameEn: "",
+      nameAr: "",
       description: "",
       billingCycle: "Monthly",
-      currency: "USD",
-      price: 0,
-      setupFee: 0,
-      trialDays: 0,
-      gracePeriodDays: 0,
-      displayOrder: 0,
+      currencyCode: "USD",
+      monthlyPrice: 0,
+      yearlyPrice: 0,
+      maxBranches: 0,
+      maxUsers: 0,
+      featuresJson: "",
       isActive: true,
     },
   })
@@ -56,18 +57,17 @@ export function CreatePlanPage() {
   const onSubmit = (data: z.infer<typeof planSchema>) => {
     const planData: Omit<Plan, "id" | "createdAt" | "updatedAt"> = {
       planCode: data.planCode,
-      planName: data.planName,
+      nameEn: data.nameEn,
+      nameAr: data.nameAr,
       description: data.description || undefined,
-      amount: data.price,
       billingCycle: data.billingCycle,
-      currency: data.currency,
-      price: data.price,
-      setupFee: data.setupFee,
-      trialDays: data.trialDays,
-      gracePeriodDays: data.gracePeriodDays,
-      status: data.isActive ? "Active" : "Inactive",
-      displayOrder: data.displayOrder,
+      currencyCode: data.currencyCode,
+      monthlyPrice: data.monthlyPrice,
+      yearlyPrice: data.yearlyPrice,
+      maxBranches: data.maxBranches,
+      maxUsers: data.maxUsers,
       isActive: data.isActive,
+      featuresJson: data.featuresJson || undefined,
     }
     createMutation.mutate(planData, {
       onSuccess: () => {
@@ -133,6 +133,33 @@ export function CreatePlanPage() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="nameEn"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name (English)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter plan name (English)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="nameAr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name (Arabic)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter plan name (Arabic)" dir="rtl" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}
@@ -158,7 +185,7 @@ export function CreatePlanPage() {
 
                 <FormField
                   control={form.control}
-                  name="currency"
+                  name="currencyCode"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
@@ -183,15 +210,15 @@ export function CreatePlanPage() {
 
                 <FormField
                   control={form.control}
-                  name="price"
+                  name="monthlyPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price</FormLabel>
+                      <FormLabel>Monthly Price</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           step="0.01"
-                          placeholder="Enter price"
+                          placeholder="Enter monthly price"
                           {...field}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                         />
@@ -203,15 +230,15 @@ export function CreatePlanPage() {
 
                 <FormField
                   control={form.control}
-                  name="setupFee"
+                  name="yearlyPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Setup Fee</FormLabel>
+                      <FormLabel>Yearly Price</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           step="0.01"
-                          placeholder="Enter setup fee"
+                          placeholder="Enter yearly price"
                           {...field}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                         />
@@ -223,14 +250,14 @@ export function CreatePlanPage() {
 
                 <FormField
                   control={form.control}
-                  name="trialDays"
+                  name="maxBranches"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Trial Days</FormLabel>
+                      <FormLabel>Max Branches</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="Enter trial days"
+                          placeholder="Enter max branches"
                           {...field}
                           onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                         />
@@ -242,14 +269,14 @@ export function CreatePlanPage() {
 
                 <FormField
                   control={form.control}
-                  name="gracePeriodDays"
+                  name="maxUsers"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Grace Period Days</FormLabel>
+                      <FormLabel>Max Users</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="Enter grace period days"
+                          placeholder="Enter max users"
                           {...field}
                           onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                         />
@@ -261,17 +288,12 @@ export function CreatePlanPage() {
 
                 <FormField
                   control={form.control}
-                  name="displayOrder"
+                  name="featuresJson"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Display Order</FormLabel>
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Features (JSON)</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="Enter display order"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        />
+                        <Textarea placeholder='e.g. ["Feature A","Feature B"]' {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

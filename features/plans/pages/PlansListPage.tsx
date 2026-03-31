@@ -37,10 +37,12 @@ export function PlansListPage() {
   const deleteMutation = useDeletePlan()
 
   const filteredPlans = plans.filter((plan) => {
-    if (filters.planName && !plan.planName.toLowerCase().includes(filters.planName.toLowerCase())) {
+    const planName = (plan.nameEn || "").toLowerCase()
+    if (filters.planName && !planName.includes(filters.planName.toLowerCase())) {
       return false
     }
-    if (filters.status !== "All" && plan.status !== filters.status) {
+    const statusLabel = plan.isActive ? "Active" : "Inactive"
+    if (filters.status !== "All" && statusLabel !== filters.status) {
       return false
     }
     if (filters.billingCycle !== "All" && plan.billingCycle !== filters.billingCycle) {
@@ -81,7 +83,7 @@ export function PlansListPage() {
       header: "Plan Code",
     },
     {
-      accessorKey: "planName",
+      accessorKey: "nameEn",
       header: "Plan Name",
     },
     {
@@ -89,25 +91,18 @@ export function PlansListPage() {
       header: "Billing Cycle",
     },
     {
-      accessorKey: "price",
+      id: "price",
       header: "Price",
       cell: ({ row }) => {
         const plan = row.original
-        return `${plan.currency} ${plan.price.toFixed(2)}`
+        const price = plan.billingCycle === "Yearly" ? plan.yearlyPrice : plan.monthlyPrice
+        return `${plan.currencyCode} ${Number(price ?? 0).toFixed(2)}`
       },
     },
     {
-      accessorKey: "setupFee",
-      header: "Setup Fee",
-      cell: ({ row }) => {
-        const plan = row.original
-        return `${plan.currency} ${plan.setupFee.toFixed(2)}`
-      },
-    },
-    {
-      accessorKey: "status",
+      id: "status",
       header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => <StatusBadge status={row.original.isActive ? "Active" : "Inactive"} />,
     },
     {
       id: "actions",
