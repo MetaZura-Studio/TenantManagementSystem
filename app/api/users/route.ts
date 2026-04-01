@@ -1,7 +1,9 @@
 import { requirePermission, PERMISSIONS } from "@/app/api/_platform/auth"
 import { jsonError, jsonOk } from "@/app/api/_platform/http"
-import { getMysqlPool } from "@/lib/server/mysql"
+import { prisma } from "@/lib/server/prisma"
 import type { User } from "@/features/users/types"
+
+export const runtime = "nodejs"
 
 function toInt(raw: any) {
   const n = Number.parseInt(String(raw), 10)
@@ -9,44 +11,38 @@ function toInt(raw: any) {
 }
 
 async function getOrCreateMainBranchId(args: { tenantId: number }) {
-  const pool = getMysqlPool()
-  const [rows] = await pool.query(
-    `SELECT id FROM branches WHERE tenant_id = ? ORDER BY id ASC LIMIT 1`,
-    [args.tenantId]
-  )
-  const existing = (rows as any[])[0]
+  const existing = await prisma.branches.findFirst({
+    where: { tenant_id: args.tenantId },
+    orderBy: { id: "asc" },
+    select: { id: true },
+  })
   if (existing?.id) return Number(existing.id)
 
   const now = new Date()
-  const [result] = await pool.query(
-    `
-    INSERT INTO branches (
-      tenant_id,
-      branch_code,
-      name_en,
-      name_ar,
-      address,
-      city,
-      state,
-      zip_code,
-      country,
-      phone,
-      email,
-      contact_name,
-      remarks,
-      status,
-      created_at,
-      created_by,
-      updated_at,
-      updated_by
-    ) VALUES (
-      ?, 'MAIN', 'Main Branch', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-      'ACTIVE', ?, NULL, ?, NULL
-    )
-    `,
-    [args.tenantId, now, now]
-  )
-  return Number((result as any).insertId)
+  const created = await prisma.branches.create({
+    data: {
+      tenant_id: args.tenantId,
+      branch_code: "MAIN",
+      name_en: "Main Branch",
+      name_ar: null,
+      address: null,
+      city: null,
+      state: null,
+      zip_code: null,
+      country: null,
+      phone: null,
+      email: null,
+      contact_name: null,
+      remarks: null,
+      status: "ACTIVE",
+      created_at: now,
+      created_by: null,
+      updated_at: now,
+      updated_by: null,
+    } as any,
+    select: { id: true },
+  })
+  return Number(created.id)
 }
 
 function rowToUser(row: any): User {
@@ -95,32 +91,7 @@ export async function GET() {
   if (!auth.ok) return auth.response
 
   try {
-    const pool = getMysqlPool()
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        tenant_id,
-        branch_id,
-        role_id,
-        full_name_en,
-        full_name_ar,
-        username,
-        email,
-        mobile,
-        status,
-        address,
-        zip_code,
-        country,
-        last_login_at,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      FROM users
-      ORDER BY id DESC
-      `
-    )
+    const rows = await prisma.users.findMany({ orderBy: { id: "desc" } })
     return jsonOk((rows as any[]).map(rowToUser))
   } catch (err: any) {
     return jsonError(400, "BAD_REQUEST", err?.message ?? "Failed to load users")
@@ -152,7 +123,6 @@ export async function POST(req: Request) {
   }
 
   try {
-    const pool = getMysqlPool()
     const now = new Date()
 
     const resolvedBranchId = branchId ?? (await getOrCreateMainBranchId({ tenantId }))
@@ -184,90 +154,13 @@ export async function POST(req: Request) {
       updated_by: null,
     }
 
-    const [result] = await pool.query(
-      `
-      INSERT INTO users (
-        user_code,
-        tenant_id,
-        branch_id,
-        role_id,
-        full_name_en,
-        full_name_ar,
-        username,
-        email,
-        mobile,
-        password_hash,
-        address,
-        city,
-        state,
-        zip_code,
-        country,
-        status,
-        last_login_at,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      ) VALUES (
-        :user_code,
-        :tenant_id,
-        :branch_id,
-        :role_id,
-        :full_name_en,
-        :full_name_ar,
-        :username,
-        :email,
-        :mobile,
-        :password_hash,
-        :address,
-        :city,
-        :state,
-        :zip_code,
-        :country,
-        :status,
-        :last_login_at,
-        :created_at,
-        :created_by,
-        :updated_at,
-        :updated_by
-      )
-      `,
-      params as any
-    )
-
-    const insertedId = (result as any).insertId
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        tenant_id,
-        branch_id,
-        role_id,
-        full_name_en,
-        full_name_ar,
-        username,
-        email,
-        mobile,
-        status,
-        address,
-        zip_code,
-        country,
-        last_login_at,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      FROM users
-      WHERE id = ?
-      LIMIT 1
-      `,
-      [insertedId]
-    )
-    const row = (rows as any[])[0]
-    return jsonOk(rowToUser(row), { status: 201 })
+    const created = await prisma.users.create({
+      data: params as any,
+    })
+    return jsonOk(rowToUser(created), { status: 201 })
   } catch (err: any) {
     const message =
-      err?.code === "ER_DUP_ENTRY"
+      err?.code === "P2002" || err?.code === "ER_DUP_ENTRY"
         ? "Duplicate username/email/user code"
         : err?.message ?? "Failed to create user"
     return jsonError(400, "BAD_REQUEST", message)

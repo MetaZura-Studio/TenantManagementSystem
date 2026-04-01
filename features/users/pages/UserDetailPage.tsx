@@ -66,7 +66,7 @@ export function UserDetailPage({ userId }: UserDetailPageProps) {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <p className="text-sm text-muted-foreground">User ID</p>
-                <p className="text-lg font-medium">{user.userId}</p>
+                <p className="text-lg font-medium">{user.id}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Username</p>
@@ -86,24 +86,20 @@ export function UserDetailPage({ userId }: UserDetailPageProps) {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Tenant</p>
-                <p className="text-lg font-medium">{tenant?.tenantName || user.tenantId}</p>
+                <p className="text-lg font-medium">{tenant?.shopNameEn || tenant?.tenantCode || user.tenantId}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Role</p>
                 <p className="text-lg font-medium">{role?.roleName || user.roleId}</p>
               </div>
-              {user.firstName && (
-                <div>
-                  <p className="text-sm text-muted-foreground">First Name</p>
-                  <p className="text-lg font-medium">{user.firstName}</p>
-                </div>
-              )}
-              {user.lastName && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Last Name</p>
-                  <p className="text-lg font-medium">{user.lastName}</p>
-                </div>
-              )}
+              <div>
+                <p className="text-sm text-muted-foreground">Full Name (EN)</p>
+                <p className="text-lg font-medium">{user.fullNameEn}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Full Name (AR)</p>
+                <p className="text-lg font-medium">{user.fullNameAr}</p>
+              </div>
             </div>
           </GlassCardContent>
         </GlassCard>

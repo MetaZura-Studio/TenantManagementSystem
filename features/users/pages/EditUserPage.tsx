@@ -23,6 +23,7 @@ import {
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { useUser, useUpdateUser } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { useRoles } from "@/features/roles/hooks"
@@ -48,8 +49,8 @@ export function EditUserPage({ userId }: EditUserPageProps) {
           password: "",
           email: user.email,
           mobile: user.mobile,
-          firstName: user.firstName || "",
-          lastName: user.lastName || "",
+          fullNameEn: user.fullNameEn || "",
+          fullNameAr: user.fullNameAr || "",
           tenantId: user.tenantId,
           branchId: user.branchId || "",
           roleId: user.roleId,
@@ -66,8 +67,8 @@ export function EditUserPage({ userId }: EditUserPageProps) {
           username: data.username,
           email: data.email,
           mobile: data.mobile,
-          firstName: data.firstName || undefined,
-          lastName: data.lastName || undefined,
+          fullNameEn: data.fullNameEn || undefined,
+          fullNameAr: data.fullNameAr || undefined,
           tenantId: data.tenantId,
           branchId: data.branchId || undefined,
           roleId: data.roleId,
@@ -126,7 +127,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Username</FormLabel>
+                      <RequiredLabel>Username</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter username" {...field} />
                       </FormControl>
@@ -140,7 +141,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <RequiredLabel>Email</RequiredLabel>
                       <FormControl>
                         <Input type="email" placeholder="Enter email" {...field} />
                       </FormControl>
@@ -154,7 +155,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="mobile"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mobile</FormLabel>
+                      <RequiredLabel>Mobile</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter mobile number" {...field} />
                       </FormControl>
@@ -165,12 +166,12 @@ export function EditUserPage({ userId }: EditUserPageProps) {
 
                 <FormField
                   control={form.control}
-                  name="firstName"
+                  name="fullNameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First Name</FormLabel>
+                      <RequiredLabel>Full Name (EN)</RequiredLabel>
                       <FormControl>
-                        <Input placeholder="Enter first name" {...field} />
+                        <Input placeholder="Enter full name (English)" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -179,12 +180,12 @@ export function EditUserPage({ userId }: EditUserPageProps) {
 
                 <FormField
                   control={form.control}
-                  name="lastName"
+                  name="fullNameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Last Name</FormLabel>
+                      <RequiredLabel>Full Name (AR)</RequiredLabel>
                       <FormControl>
-                        <Input placeholder="Enter last name" {...field} />
+                        <Input placeholder="Enter full name (Arabic)" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -196,7 +197,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="tenantId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tenant</FormLabel>
+                      <RequiredLabel>Tenant</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -221,7 +222,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="roleId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role</FormLabel>
+                      <RequiredLabel>Role</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -246,7 +247,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <RequiredLabel>Status</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>

@@ -15,6 +15,31 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Pencil, Trash2, Plus, Eye } from "lucide-react"
 import Link from "next/link"
 
+function toInvoiceLifecycleStatus(invoice: Invoice): string {
+  const raw = String(invoice.status || "").toUpperCase()
+  if (raw === "DRAFT") return "DRAFT"
+  if (raw === "CANCELLED") return "CANCELLED"
+  // Current model mixes payment state into `status`; treat everything else as "ISSUED" lifecycle.
+  return "ISSUED"
+}
+
+function toPaymentStatus(invoice: Invoice): string {
+  const amountDue = Number(invoice.amountDue ?? 0)
+  const paidAmount = Number(invoice.paidAmount ?? 0)
+
+  if (amountDue <= 0) return "PAID"
+  if (paidAmount > 0) return "PARTIALLY_PAID"
+
+  const dueTs = invoice.dueDate ? Date.parse(invoice.dueDate) : NaN
+  if (!Number.isNaN(dueTs)) {
+    const today = new Date()
+    const todayTs = Date.parse(today.toISOString().split("T")[0])
+    if (dueTs < todayTs) return "OVERDUE"
+  }
+
+  return "UNPAID"
+}
+
 export function InvoicesListPage() {
   const router = useRouter()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -75,9 +100,14 @@ export function InvoicesListPage() {
       },
     },
     {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      id: "invoiceStatus",
+      header: "Invoice Status",
+      cell: ({ row }) => <StatusBadge status={toInvoiceLifecycleStatus(row.original)} />,
+    },
+    {
+      id: "paymentStatus",
+      header: "Payment Status",
+      cell: ({ row }) => <StatusBadge status={toPaymentStatus(row.original)} />,
     },
     {
       id: "actions",

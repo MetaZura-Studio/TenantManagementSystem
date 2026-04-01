@@ -1,7 +1,14 @@
 import { requirePermission, PERMISSIONS } from "@/app/api/_platform/auth"
 import { jsonError, jsonOk } from "@/app/api/_platform/http"
-import { getMysqlPool } from "@/lib/server/mysql"
+import { prisma } from "@/lib/server/prisma"
 import type { Tenant } from "@/features/tenants/types"
+
+export const runtime = "nodejs"
+
+function toIso(value: any) {
+  if (!value) return value
+  return value instanceof Date ? value.toISOString() : value
+}
 
 function rowToTenant(row: any): Tenant {
   return {
@@ -21,14 +28,14 @@ function rowToTenant(row: any): Tenant {
     country: row.country ?? "",
     timezone: "UTC",
     subscriptionStatus: row.subscription_status,
-    subscriptionStartDate: row.subscription_start_date ?? undefined,
-    subscriptionEndDate: row.subscription_end_date ?? undefined,
-    lockedAt: row.locked_at ?? undefined,
+    subscriptionStartDate: toIso(row.subscription_start_date) ?? undefined,
+    subscriptionEndDate: toIso(row.subscription_end_date) ?? undefined,
+    lockedAt: toIso(row.locked_at) ?? undefined,
     suspensionReason: row.suspension_reason ?? undefined,
-    deletedAt: row.deleted_at ?? undefined,
-    createdAt: row.created_at,
+    deletedAt: toIso(row.deleted_at) ?? undefined,
+    createdAt: toIso(row.created_at),
     createdBy: row.created_by != null ? String(row.created_by) : undefined,
-    updatedAt: row.updated_at,
+    updatedAt: toIso(row.updated_at),
     updatedBy: row.updated_by != null ? String(row.updated_by) : undefined,
   }
 }
@@ -38,41 +45,11 @@ export async function GET() {
   if (!auth.ok) return auth.response
 
   try {
-    const pool = getMysqlPool()
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        tenant_code,
-        slug,
-        shop_name_en,
-        shop_name_ar,
-        owner_name,
-        owner_email,
-        owner_mobile,
-        tenant_type,
-        contact_person,
-        address,
-        city,
-        zip_code,
-        country,
-        subscription_status,
-        subscription_start_date,
-        subscription_end_date,
-        locked_at,
-        suspension_reason,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by,
-        deleted_at
-      FROM tenants
-      WHERE deleted_at IS NULL
-      ORDER BY id DESC
-      `
-    )
-
-    return jsonOk((rows as any[]).map(rowToTenant))
+    const rows = await prisma.tenants.findMany({
+      where: { deleted_at: null },
+      orderBy: { id: "desc" },
+    })
+    return jsonOk(rows.map(rowToTenant))
   } catch (err: any) {
     return jsonError(400, "BAD_REQUEST", err?.message ?? "Failed to load tenants")
   }
@@ -94,130 +71,83 @@ export async function POST(req: Request) {
   }
 
   try {
-    const pool = getMysqlPool()
     const now = new Date()
 
-    const params = {
-      tenant_code: body.tenantCode,
-      slug: body.slug,
-      shop_name_en: body.shopNameEn,
-      shop_name_ar: body.shopNameAr ?? null,
-      owner_name: body.ownerName,
-      owner_email: body.ownerEmail,
-      owner_mobile: body.ownerMobile ?? "",
-      tenant_type: body.tenantType ?? "Individual",
-      contact_person: body.contactPerson ?? null,
-      address: body.address ?? null,
-      city: body.city ?? null,
-      zip_code: body.zipCode ?? null,
-      country: body.country ?? null,
-      status: "Active",
-      subscription_status: body.subscriptionStatus ?? "TRIAL",
-      subscription_start_date: body.subscriptionStartDate ?? null,
-      subscription_end_date: body.subscriptionEndDate ?? null,
-      locked_at: body.lockedAt ?? null,
-      suspension_reason: body.suspensionReason ?? null,
-      created_at: now,
-      created_by: null,
-      updated_at: now,
-      updated_by: null,
+    const parseDateOrNull = (value: unknown) => {
+      if (value == null) return null
+      const s = String(value).trim()
+      if (!s) return null
+      const d = new Date(s)
+      return Number.isNaN(d.getTime()) ? null : d
     }
 
-    const [result] = await pool.query(
-      `
-      INSERT INTO tenants (
-        tenant_code,
-        slug,
-        shop_name_en,
-        shop_name_ar,
-        owner_name,
-        owner_email,
-        owner_mobile,
-        tenant_type,
-        contact_person,
-        address,
-        city,
-        zip_code,
-        country,
-        status,
-        subscription_status,
-        subscription_start_date,
-        subscription_end_date,
-        locked_at,
-        suspension_reason,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      ) VALUES (
-        :tenant_code,
-        :slug,
-        :shop_name_en,
-        :shop_name_ar,
-        :owner_name,
-        :owner_email,
-        :owner_mobile,
-        :tenant_type,
-        :contact_person,
-        :address,
-        :city,
-        :zip_code,
-        :country,
-        :status,
-        :subscription_status,
-        :subscription_start_date,
-        :subscription_end_date,
-        :locked_at,
-        :suspension_reason,
-        :created_at,
-        :created_by,
-        :updated_at,
-        :updated_by
-      )
-      `,
-      params as any
-    )
+    const created = await prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenants.create({
+        data: {
+          tenant_code: body.tenantCode,
+          slug: body.slug,
+          shop_name_en: body.shopNameEn,
+          shop_name_ar: body.shopNameAr ?? null,
+          owner_name: body.ownerName,
+          owner_email: body.ownerEmail,
+          owner_mobile: body.ownerMobile ?? "",
+          tenant_type: body.tenantType ?? "Individual",
+          contact_person: body.contactPerson ?? null,
+          address: body.address ?? null,
+          city: body.city ?? null,
+          zip_code: body.zipCode ?? null,
+          country: body.country ?? null,
+          status: "Active",
+          subscription_status: body.subscriptionStatus ?? "TRIAL",
+          subscription_start_date: parseDateOrNull(body.subscriptionStartDate) as any,
+          subscription_end_date: parseDateOrNull(body.subscriptionEndDate) as any,
+          locked_at: parseDateOrNull(body.lockedAt) as any,
+          suspension_reason: body.suspensionReason ?? null,
+          created_at: now,
+          created_by: null,
+          updated_at: now,
+          updated_by: null,
+          deleted_at: null,
+          remarks: null,
+          state: null,
+        } as any,
+      })
 
-    const insertedId = (result as any).insertId
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        tenant_code,
-        slug,
-        shop_name_en,
-        shop_name_ar,
-        owner_name,
-        owner_email,
-        owner_mobile,
-        tenant_type,
-        contact_person,
-        address,
-        city,
-        zip_code,
-        country,
-        subscription_status,
-        subscription_start_date,
-        subscription_end_date,
-        locked_at,
-        suspension_reason,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by,
-        deleted_at
-      FROM tenants
-      WHERE id = ?
-      LIMIT 1
-      `,
-      [insertedId]
-    )
+      // Create a default "Main Branch" for every tenant.
+      // If it already exists (unique tenant_id+branch_code), ignore.
+      try {
+        await tx.branches.create({
+          data: {
+            tenant_id: tenant.id,
+            branch_code: "MAIN",
+            name_en: "Main Branch",
+            name_ar: null,
+            address: body.address ?? null,
+            city: body.city ?? null,
+            state: null,
+            zip_code: body.zipCode ?? null,
+            country: body.country ?? null,
+            phone: body.ownerMobile ?? null,
+            email: null,
+            contact_name: body.contactPerson ?? body.ownerName ?? null,
+            remarks: null,
+            status: "ACTIVE",
+            created_at: now,
+            created_by: null,
+            updated_at: now,
+            updated_by: null,
+          } as any,
+        })
+      } catch (err: any) {
+        if (err?.code !== "P2002") throw err
+      }
 
-    const row = (rows as any[])[0]
-    return jsonOk(rowToTenant(row), { status: 201 })
+      return tenant
+    })
+    return jsonOk(rowToTenant(created), { status: 201 })
   } catch (err: any) {
     const message =
-      err?.code === "ER_DUP_ENTRY"
+      err?.code === "P2002" || err?.code === "ER_DUP_ENTRY"
         ? "Duplicate tenant code/slug/email"
         : err?.message ?? "Failed to create tenant"
     return jsonError(400, "BAD_REQUEST", message)

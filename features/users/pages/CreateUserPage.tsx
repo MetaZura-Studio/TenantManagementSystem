@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -24,6 +25,8 @@ import {
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
+import { getCountries } from "@/lib/geo/locations"
 import { useCreateUser } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { useBranches } from "@/features/branches/hooks"
@@ -59,6 +62,8 @@ export function CreateUserPage() {
       country: "",
     },
   })
+
+  const countryOptions = useMemo(() => getCountries(), [])
 
   // Filter branches based on selected tenant
   const selectedTenantId = form.watch("tenantId")
@@ -126,7 +131,7 @@ export function CreateUserPage() {
                 name="tenantId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tenant</FormLabel>
+                    <RequiredLabel>Tenant</RequiredLabel>
                     <Select onValueChange={(value) => {
                       field.onChange(value)
                       form.setValue("branchId", "") // Reset branch when tenant changes
@@ -192,7 +197,7 @@ export function CreateUserPage() {
                   name="roleId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role</FormLabel>
+                      <RequiredLabel>Role</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -217,7 +222,7 @@ export function CreateUserPage() {
                   name="fullNameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name (English)</FormLabel>
+                      <RequiredLabel>Full Name (English)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter full name in English" {...field} />
                       </FormControl>
@@ -231,7 +236,7 @@ export function CreateUserPage() {
                   name="fullNameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name (Arabic)</FormLabel>
+                      <RequiredLabel>Full Name (Arabic)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter full name in Arabic" {...field} dir="rtl" />
                       </FormControl>
@@ -245,7 +250,7 @@ export function CreateUserPage() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Username</FormLabel>
+                      <RequiredLabel>Username</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter username" {...field} />
                       </FormControl>
@@ -259,7 +264,7 @@ export function CreateUserPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <RequiredLabel>Email</RequiredLabel>
                       <FormControl>
                         <Input type="email" placeholder="Enter email" {...field} />
                       </FormControl>
@@ -273,7 +278,7 @@ export function CreateUserPage() {
                   name="mobile"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mobile</FormLabel>
+                      <RequiredLabel>Mobile</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter mobile number" {...field} />
                       </FormControl>
@@ -287,7 +292,7 @@ export function CreateUserPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <RequiredLabel>Password</RequiredLabel>
                       <FormControl>
                         <Input type="password" placeholder="Enter password" {...field} />
                       </FormControl>
@@ -331,9 +336,20 @@ export function CreateUserPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Country</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter country (optional)" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select country (optional)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {countryOptions.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

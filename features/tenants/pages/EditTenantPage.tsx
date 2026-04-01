@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -25,6 +25,8 @@ import {
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
+import { getCitiesByCountryName, getCountries } from "@/lib/geo/locations"
 import { useTenant, useUpdateTenant } from "../hooks"
 import { tenantSchema } from "../schemas"
 import { z } from "zod"
@@ -64,6 +66,13 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
       suspensionReason: "",
     },
   })
+
+  const selectedCountry = form.watch("country")
+  const countryOptions = useMemo(() => getCountries(), [])
+  const cityOptions = useMemo(
+    () => getCitiesByCountryName(selectedCountry),
+    [selectedCountry]
+  )
 
   useEffect(() => {
     if (!tenant) return
@@ -145,7 +154,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="tenantCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tenant Code</FormLabel>
+                      <RequiredLabel>Tenant Code</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter tenant code" {...field} />
                       </FormControl>
@@ -159,7 +168,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="shopNameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Shop Name (EN)</FormLabel>
+                      <RequiredLabel>Shop Name (EN)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter shop name (English)" {...field} />
                       </FormControl>
@@ -173,7 +182,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="shopNameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Shop Name (AR)</FormLabel>
+                      <RequiredLabel>Shop Name (AR)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter shop name (Arabic)" {...field} />
                       </FormControl>
@@ -187,7 +196,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="ownerName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Owner Name</FormLabel>
+                      <RequiredLabel>Owner Name</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter owner name" {...field} />
                       </FormControl>
@@ -201,7 +210,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="ownerEmail"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Owner Email</FormLabel>
+                      <RequiredLabel>Owner Email</RequiredLabel>
                       <FormControl>
                         <Input type="email" placeholder="Enter owner email" {...field} />
                       </FormControl>
@@ -215,7 +224,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="ownerMobile"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Owner Mobile</FormLabel>
+                      <RequiredLabel>Owner Mobile</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter owner mobile" {...field} />
                       </FormControl>
@@ -229,7 +238,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="tenantType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tenant Type</FormLabel>
+                      <RequiredLabel>Tenant Type</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -251,6 +260,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="contactPerson"
                   render={({ field }) => (
                     <FormItem>
+                      <RequiredLabel>Contact Person</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter contact person" {...field} />
                       </FormControl>
@@ -264,36 +274,9 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address</FormLabel>
+                      <RequiredLabel>Address</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input placeholder="Enter city" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="zipCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Zip Code</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter zip code" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -305,10 +288,79 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Country</FormLabel>
+                      <RequiredLabel>Country</RequiredLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value)
+                          form.setValue("city", "", { shouldDirty: true, shouldValidate: true })
+                        }}
+                        value={field.value ?? ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder="Select country"
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {countryOptions.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="zipCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <RequiredLabel>Zip Code</RequiredLabel>
                       <FormControl>
-                        <Input placeholder="Enter country" {...field} />
+                        <Input placeholder="Enter zip code" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <RequiredLabel>City</RequiredLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value ?? ""}
+                        disabled={!selectedCountry}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={selectedCountry ? "Select city" : "Select country first"}
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {field.value && !cityOptions.some((c) => c.value === field.value) ? (
+                            <SelectItem key={`selected-city-${field.value}`} value={field.value}>
+                              {field.value}
+                            </SelectItem>
+                          ) : null}
+                          {cityOptions.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -319,7 +371,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="timezone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Timezone</FormLabel>
+                      <RequiredLabel>Timezone</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter timezone" {...field} />
                       </FormControl>
@@ -333,7 +385,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="subscriptionStatus"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Subscription Status</FormLabel>
+                      <RequiredLabel>Subscription Status</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>

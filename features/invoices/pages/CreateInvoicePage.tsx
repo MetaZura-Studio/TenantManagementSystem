@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -33,11 +33,13 @@ import {
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { useCreateInvoice } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { useSubscriptions } from "@/features/tenant-subscriptions/hooks"
 import { useCurrencies } from "@/features/currency/hooks"
 import type { Invoice } from "../types"
+import type { TenantSubscription } from "@/features/tenant-subscriptions/types"
 import { z } from "zod"
 import { Mail, MessageCircle } from "lucide-react"
 
@@ -76,6 +78,73 @@ export function CreateInvoicePage() {
   })
 
   const nextInvoiceCode = useMemo(() => `INV-${Date.now().toString().slice(-8)}`, [])
+
+  const selectedTenantId = form.watch("tenantId")
+
+  const tenantSubscriptions = useMemo(() => {
+    if (!selectedTenantId) return []
+    return subscriptions.filter((s) => s.tenantId === selectedTenantId)
+  }, [subscriptions, selectedTenantId])
+
+  const bestSubscriptionForTenant = useMemo(() => {
+    if (tenantSubscriptions.length === 0) return null
+    if (tenantSubscriptions.length === 1) return tenantSubscriptions[0]
+
+    const statusPriority: Record<string, number> = {
+      ACTIVE: 0,
+      TRIAL: 1,
+      TRIALING: 1,
+      PAST_DUE: 2,
+      SUSPENDED: 3,
+      Pending: 4,
+      EXPIRED: 5,
+      Expired: 5,
+      CANCELLED: 6,
+      CANCELED: 6,
+      Active: 0,
+    }
+
+    const toPriority = (s: TenantSubscription) =>
+      statusPriority[String(s.status || "").toUpperCase()] ??
+      statusPriority[String(s.status || "")] ??
+      99
+
+    const toTs = (d?: string) => (d ? Date.parse(d) || 0 : 0)
+
+    return [...tenantSubscriptions].sort((a, b) => {
+      const ap = toPriority(a)
+      const bp = toPriority(b)
+      if (ap !== bp) return ap - bp
+      const aEnd = toTs(a.currentPeriodEnd ?? a.endDate ?? a.startDate)
+      const bEnd = toTs(b.currentPeriodEnd ?? b.endDate ?? b.startDate)
+      return bEnd - aEnd
+    })[0]
+  }, [tenantSubscriptions])
+
+  useEffect(() => {
+    // Auto-select subscription when tenant changes (or subscriptions load).
+    if (!selectedTenantId) return
+    const currentSubId = form.getValues("subscriptionId")
+
+    const currentIsValid = !!currentSubId && tenantSubscriptions.some((s) => s.id === currentSubId)
+    if (currentIsValid) return
+
+    if (bestSubscriptionForTenant?.id) {
+      form.setValue("subscriptionId", bestSubscriptionForTenant.id, {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+      if (bestSubscriptionForTenant.billingCurrency) {
+        form.setValue("currencyCode", bestSubscriptionForTenant.billingCurrency, {
+          shouldDirty: true,
+          shouldValidate: true,
+        })
+      }
+    } else {
+      form.setValue("subscriptionId", "", { shouldDirty: true, shouldValidate: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTenantId, bestSubscriptionForTenant?.id])
 
   const onSubmit = (data: z.infer<typeof createInvoiceSchema>) => {
     const invoiceData: Omit<Invoice, "id" | "createdAt" | "updatedAt"> = {
@@ -169,8 +238,15 @@ export function CreateInvoicePage() {
                   name="tenantId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tenant</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <RequiredLabel>Tenant</RequiredLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value)
+                          // Reset subscription so it can be auto-selected for the new tenant.
+                          form.setValue("subscriptionId", "", { shouldDirty: true, shouldValidate: true })
+                        }}
+                        value={field.value ?? ""}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select tenant" />
@@ -194,17 +270,30 @@ export function CreateInvoicePage() {
                   name="subscriptionId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Subscription</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <RequiredLabel>Subscription</RequiredLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value ?? ""}
+                        disabled={!selectedTenantId || tenantSubscriptions.length === 0}
+                      >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select subscription" />
+                            <SelectValue
+                              placeholder={
+                                !selectedTenantId
+                                  ? "Select tenant first"
+                                  : tenantSubscriptions.length === 0
+                                    ? "No subscriptions for this tenant"
+                                    : "Select subscription"
+                              }
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {subscriptions.map((sub) => (
+                          {tenantSubscriptions.map((sub) => (
                             <SelectItem key={sub.id} value={sub.id}>
-                              {sub.subscriptionId}
+                              {sub.subscriptionId}{" "}
+                              {sub.status ? `(${String(sub.status).toUpperCase()})` : ""}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -219,7 +308,7 @@ export function CreateInvoicePage() {
                   name="periodStart"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Period Start</FormLabel>
+                      <RequiredLabel>Period Start</RequiredLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -233,7 +322,7 @@ export function CreateInvoicePage() {
                   name="periodEnd"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Period End</FormLabel>
+                      <RequiredLabel>Period End</RequiredLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -247,7 +336,7 @@ export function CreateInvoicePage() {
                   name="issueDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Issue Date</FormLabel>
+                      <RequiredLabel>Issue Date</RequiredLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -261,7 +350,7 @@ export function CreateInvoicePage() {
                   name="dueDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Due Date</FormLabel>
+                      <RequiredLabel>Due Date</RequiredLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -275,7 +364,7 @@ export function CreateInvoicePage() {
                   name="currencyCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Currency</FormLabel>
+                      <RequiredLabel>Currency</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -43,6 +43,7 @@ export function CreateSubscriptionPage() {
   const { data: currencies = [] } = useCurrencies()
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const subscriptionFormRef = useRef<HTMLDivElement>(null)
+  const lastDiscountEditRef = useRef<"amount" | "percent" | null>(null)
 
   const form = useForm<z.infer<typeof subscriptionSchema>>({
     resolver: zodResolver(subscriptionSchema),
@@ -62,6 +63,47 @@ export function CreateSubscriptionPage() {
       notes: "",
     },
   })
+
+  const unitPrice = form.watch("unitPrice")
+  const discountAmount = form.watch("discountAmount")
+  const discountPercent = form.watch("discountPercent")
+
+  useEffect(() => {
+    const base = Number(unitPrice ?? 0)
+    if (!Number.isFinite(base) || base <= 0) {
+      if (lastDiscountEditRef.current === "amount" && Number(discountPercent ?? 0) !== 0) {
+        form.setValue("discountPercent", 0, { shouldDirty: true, shouldValidate: true })
+      }
+      if (lastDiscountEditRef.current === "percent" && Number(discountAmount ?? 0) !== 0) {
+        form.setValue("discountAmount", 0, { shouldDirty: true, shouldValidate: true })
+      }
+      return
+    }
+
+    if (lastDiscountEditRef.current === "amount") {
+      const amt = Math.max(0, Number(discountAmount ?? 0))
+      const pct = (amt / base) * 100
+      const pctRounded = Number(pct.toFixed(2))
+      if (pctRounded !== Number(discountPercent ?? 0)) {
+        form.setValue("discountPercent", pctRounded, {
+          shouldDirty: true,
+          shouldValidate: true,
+        })
+      }
+    }
+
+    if (lastDiscountEditRef.current === "percent") {
+      const pct = Math.max(0, Number(discountPercent ?? 0))
+      const amt = (base * pct) / 100
+      const amtRounded = Number(amt.toFixed(2))
+      if (amtRounded !== Number(discountAmount ?? 0)) {
+        form.setValue("discountAmount", amtRounded, {
+          shouldDirty: true,
+          shouldValidate: true,
+        })
+      }
+    }
+  }, [unitPrice, discountAmount, discountPercent, form])
 
   const pricingPlans: PricingPlanCard[] = useMemo(() => {
     return plans.map((plan) => {
@@ -394,7 +436,10 @@ export function CreateSubscriptionPage() {
                           step="0.01"
                           placeholder="Enter discount amount"
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          onChange={(e) => {
+                            lastDiscountEditRef.current = "amount"
+                            field.onChange(parseFloat(e.target.value) || 0)
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -414,7 +459,10 @@ export function CreateSubscriptionPage() {
                           step="0.01"
                           placeholder="Enter discount percent"
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          onChange={(e) => {
+                            lastDiscountEditRef.current = "percent"
+                            field.onChange(parseFloat(e.target.value) || 0)
+                          }}
                         />
                       </FormControl>
                       <FormMessage />

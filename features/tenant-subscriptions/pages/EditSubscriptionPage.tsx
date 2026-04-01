@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -43,6 +44,7 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
   const { data: plans = [] } = usePlans()
   const { data: currencies = [] } = useCurrencies()
   const updateMutation = useUpdateSubscription()
+  const lastDiscountEditRef = useRef<"amount" | "percent" | null>(null)
 
   const form = useForm<z.infer<typeof subscriptionSchema>>({
     resolver: zodResolver(subscriptionSchema),
@@ -67,6 +69,41 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
         }
       : undefined,
   })
+
+  const unitPrice = form.watch("unitPrice")
+  const discountAmount = form.watch("discountAmount")
+  const discountPercent = form.watch("discountPercent")
+
+  useEffect(() => {
+    const base = Number(unitPrice ?? 0)
+    if (!Number.isFinite(base) || base <= 0) {
+      if (lastDiscountEditRef.current === "amount" && Number(discountPercent ?? 0) !== 0) {
+        form.setValue("discountPercent", 0, { shouldDirty: true, shouldValidate: true })
+      }
+      if (lastDiscountEditRef.current === "percent" && Number(discountAmount ?? 0) !== 0) {
+        form.setValue("discountAmount", 0, { shouldDirty: true, shouldValidate: true })
+      }
+      return
+    }
+
+    if (lastDiscountEditRef.current === "amount") {
+      const amt = Math.max(0, Number(discountAmount ?? 0))
+      const pct = (amt / base) * 100
+      const pctRounded = Number(pct.toFixed(2))
+      if (pctRounded !== Number(discountPercent ?? 0)) {
+        form.setValue("discountPercent", pctRounded, { shouldDirty: true, shouldValidate: true })
+      }
+    }
+
+    if (lastDiscountEditRef.current === "percent") {
+      const pct = Math.max(0, Number(discountPercent ?? 0))
+      const amt = (base * pct) / 100
+      const amtRounded = Number(amt.toFixed(2))
+      if (amtRounded !== Number(discountAmount ?? 0)) {
+        form.setValue("discountAmount", amtRounded, { shouldDirty: true, shouldValidate: true })
+      }
+    }
+  }, [unitPrice, discountAmount, discountPercent, form])
 
   const onSubmit = (data: z.infer<typeof subscriptionSchema>) => {
     updateMutation.mutate(
@@ -232,6 +269,54 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                           placeholder="Enter unit price"
                           {...field}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="discountAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Discount Amount</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Enter discount amount"
+                          {...field}
+                          onChange={(e) => {
+                            lastDiscountEditRef.current = "amount"
+                            field.onChange(parseFloat(e.target.value) || 0)
+                          }}
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="discountPercent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Discount Percent</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Enter discount percent"
+                          {...field}
+                          onChange={(e) => {
+                            lastDiscountEditRef.current = "percent"
+                            field.onChange(parseFloat(e.target.value) || 0)
+                          }}
                           value={field.value}
                         />
                       </FormControl>

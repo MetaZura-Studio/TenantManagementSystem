@@ -12,8 +12,10 @@ import { useTenant } from "../hooks"
 import { useBranches, useDeleteBranch } from "@/features/branches/hooks"
 import { useSubscriptions } from "@/features/tenant-subscriptions/hooks"
 import { usePlans } from "@/features/plans/hooks"
+import { useUsers } from "@/features/users/hooks/use-users"
 import type { Branch } from "@/features/branches/types"
 import type { TenantSubscription } from "@/features/tenant-subscriptions/types"
+import type { User } from "@/features/users/types"
 import { DataTable } from "@/components/shared/data-table"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Pencil, ArrowLeft, Eye, Trash2 } from "lucide-react"
@@ -29,6 +31,7 @@ export function TenantDetailPage({ tenantId }: TenantDetailPageProps) {
   const { data: branches = [], isLoading: isBranchesLoading } = useBranches()
   const { data: subscriptions = [], isLoading: isSubscriptionsLoading } = useSubscriptions()
   const { data: plans = [] } = usePlans()
+  const { data: users = [], isLoading: isUsersLoading } = useUsers()
   const deleteBranchMutation = useDeleteBranch()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [branchToDelete, setBranchToDelete] = useState<string | null>(null)
@@ -43,6 +46,7 @@ export function TenantDetailPage({ tenantId }: TenantDetailPageProps) {
 
   const tenantBranches = branches.filter((b) => b.tenantId === tenant.id)
   const tenantSubscriptions = subscriptions.filter((s) => s.tenantId === tenant.id)
+  const tenantUsers = users.filter((u) => u.tenantId === tenant.id)
 
   const handleDeleteBranch = (id: string) => {
     setBranchToDelete(id)
@@ -157,9 +161,9 @@ export function TenantDetailPage({ tenantId }: TenantDetailPageProps) {
       },
     },
     {
-      accessorKey: "changeReason",
+      accessorKey: "overrideNotes",
       header: "Change Reason",
-      cell: ({ row }) => row.original.changeReason ?? "-",
+      cell: ({ row }) => row.original.overrideNotes ?? row.original.notes ?? "-",
     },
     {
       id: "actions",
@@ -176,6 +180,26 @@ export function TenantDetailPage({ tenantId }: TenantDetailPageProps) {
           </div>
         )
       },
+    },
+  ]
+
+  const userColumns: ColumnDef<User>[] = [
+    { accessorKey: "fullNameEn", header: "Name" },
+    { accessorKey: "username", header: "Username" },
+    { accessorKey: "email", header: "Email" },
+    {
+      id: "branch",
+      header: "Branch",
+      cell: ({ row }) => {
+        const u = row.original
+        if (!u.branchId) return "Main branch"
+        return tenantBranches.find((b) => b.id === u.branchId)?.nameEn ?? u.branchId
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
   ]
 
@@ -257,6 +281,20 @@ export function TenantDetailPage({ tenantId }: TenantDetailPageProps) {
                 <div className="p-12 text-center text-muted-foreground">Loading...</div>
               ) : (
                 <DataTable columns={subscriptionColumns} data={tenantSubscriptions} />
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Users</h3>
+                <div className="text-sm text-muted-foreground">
+                  Total Users: <span className="font-medium text-foreground">{tenantUsers.length}</span>
+                </div>
+              </div>
+              {isUsersLoading ? (
+                <div className="p-12 text-center text-muted-foreground">Loading...</div>
+              ) : (
+                <DataTable columns={userColumns} data={tenantUsers} />
               )}
             </div>
           </div>

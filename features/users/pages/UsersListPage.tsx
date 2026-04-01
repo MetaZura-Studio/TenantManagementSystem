@@ -12,6 +12,7 @@ import { toast } from "@/components/shared/feedback/use-toast"
 import { useUsers, useDeleteUser } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { useBranches } from "@/features/branches/hooks"
+import { useRoles } from "@/features/roles/hooks"
 import type { User } from "../types"
 import { ColumnDef } from "@tanstack/react-table"
 import { Pencil, Trash2, Plus, Eye } from "lucide-react"
@@ -25,6 +26,7 @@ export function UsersListPage() {
   const { data: users = [], isLoading } = useUsers()
   const { data: tenants = [] } = useTenants()
   const { data: branches = [] } = useBranches()
+  const { data: roles = [] } = useRoles()
   const deleteMutation = useDeleteUser()
 
   const handleDelete = (id: string) => {
@@ -90,8 +92,13 @@ export function UsersListPage() {
       },
     },
     {
-      accessorKey: "roleId",
+      id: "role",
       header: "Role",
+      cell: ({ row }) => {
+        const user = row.original
+        const role = roles.find((r) => r.id === user.roleId)
+        return role ? role.roleName : "-"
+      },
     },
     {
       accessorKey: "status",

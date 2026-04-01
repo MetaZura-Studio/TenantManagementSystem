@@ -1,11 +1,18 @@
 import { requirePermission, PERMISSIONS } from "@/app/api/_platform/auth"
 import { jsonError, jsonOk } from "@/app/api/_platform/http"
-import { getMysqlPool } from "@/lib/server/mysql"
+import { prisma } from "@/lib/server/prisma"
 import type { Branch } from "@/features/branches/types"
+
+export const runtime = "nodejs"
 
 function toId(raw: string) {
   const id = Number.parseInt(raw, 10)
   return Number.isFinite(id) ? id : null
+}
+
+function toIso(value: any) {
+  if (!value) return value
+  return value instanceof Date ? value.toISOString() : value
 }
 
 function rowToBranch(row: any): Branch {
@@ -24,9 +31,9 @@ function rowToBranch(row: any): Branch {
     contactName: row.contact_name ?? "",
     status: row.status,
     remarks: row.remarks ?? undefined,
-    createdAt: row.created_at,
+    createdAt: toIso(row.created_at),
     createdBy: row.created_by != null ? String(row.created_by) : undefined,
-    updatedAt: row.updated_at,
+    updatedAt: toIso(row.updated_at),
     updatedBy: row.updated_by != null ? String(row.updated_by) : undefined,
   }
 }
@@ -39,35 +46,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   if (!id) return jsonError(400, "BAD_REQUEST", "Invalid id")
 
   try {
-    const pool = getMysqlPool()
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        tenant_id,
-        branch_code,
-        name_en,
-        name_ar,
-        address,
-        city,
-        state,
-        zip_code,
-        country,
-        phone,
-        contact_name,
-        remarks,
-        status,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      FROM branches
-      WHERE id = ?
-      LIMIT 1
-      `,
-      [id]
-    )
-    const row = (rows as any[])[0]
+    const row = await prisma.branches.findUnique({ where: { id } })
     if (!row) return jsonError(404, "NOT_FOUND", "Branch not found")
     return jsonOk(rowToBranch(row))
   } catch (err: any) {
@@ -96,81 +75,28 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 
   try {
-    const pool = getMysqlPool()
     const now = new Date()
 
-    const updateParams = {
-      id,
-      tenant_id: tenantId,
-      branch_code: updates.branchCode ?? null,
-      name_en: updates.nameEn ?? null,
-      name_ar: updates.nameAr ?? null,
-      address: updates.address ?? null,
-      city: updates.city ?? null,
-      state: updates.state ?? null,
-      zip_code: updates.zipCode ?? null,
-      country: updates.country ?? null,
-      phone: updates.phone ?? null,
-      contact_name: updates.contactName ?? null,
-      remarks: updates.remarks ?? null,
-      status: updates.status ?? null,
-      updated_at: now,
-      updated_by: null,
-    }
-
-    await pool.query(
-      `
-      UPDATE branches
-      SET
-        tenant_id = COALESCE(:tenant_id, tenant_id),
-        branch_code = COALESCE(:branch_code, branch_code),
-        name_en = COALESCE(:name_en, name_en),
-        name_ar = COALESCE(:name_ar, name_ar),
-        address = COALESCE(:address, address),
-        city = COALESCE(:city, city),
-        state = COALESCE(:state, state),
-        zip_code = COALESCE(:zip_code, zip_code),
-        country = COALESCE(:country, country),
-        phone = COALESCE(:phone, phone),
-        contact_name = COALESCE(:contact_name, contact_name),
-        remarks = COALESCE(:remarks, remarks),
-        status = COALESCE(:status, status),
-        updated_at = :updated_at,
-        updated_by = :updated_by
-      WHERE id = :id
-      `,
-      updateParams as any
-    )
-
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        tenant_id,
-        branch_code,
-        name_en,
-        name_ar,
-        address,
-        city,
-        state,
-        zip_code,
-        country,
-        phone,
-        contact_name,
-        remarks,
-        status,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      FROM branches
-      WHERE id = ?
-      LIMIT 1
-      `,
-      [id]
-    )
-
-    const row = (rows as any[])[0]
+    const row = await prisma.branches.update({
+      where: { id },
+      data: {
+        tenant_id: tenantId ?? undefined,
+        branch_code: updates.branchCode ?? undefined,
+        name_en: updates.nameEn ?? undefined,
+        name_ar: updates.nameAr ?? undefined,
+        address: updates.address ?? undefined,
+        city: updates.city ?? undefined,
+        state: updates.state ?? undefined,
+        zip_code: updates.zipCode ?? undefined,
+        country: updates.country ?? undefined,
+        phone: updates.phone ?? undefined,
+        contact_name: updates.contactName ?? undefined,
+        remarks: updates.remarks ?? undefined,
+        status: updates.status ?? undefined,
+        updated_at: now,
+        updated_by: null,
+      } as any,
+    })
     if (!row) return jsonError(404, "NOT_FOUND", "Branch not found")
     return jsonOk(rowToBranch(row))
   } catch (err: any) {
@@ -186,10 +112,9 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   if (!id) return jsonError(400, "BAD_REQUEST", "Invalid id")
 
   try {
-    const pool = getMysqlPool()
-    const [result] = await pool.query(`DELETE FROM branches WHERE id = ?`, [id])
-    const affected = (result as any).affectedRows ?? 0
-    if (affected === 0) return jsonError(404, "NOT_FOUND", "Branch not found")
+    const existing = await prisma.branches.findUnique({ where: { id } })
+    if (!existing) return jsonError(404, "NOT_FOUND", "Branch not found")
+    await prisma.branches.delete({ where: { id } })
     return jsonOk({ ok: true })
   } catch (err: any) {
     return jsonError(400, "BAD_REQUEST", err?.message ?? "Failed to delete branch")

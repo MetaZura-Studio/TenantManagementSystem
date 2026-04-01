@@ -1,7 +1,14 @@
 import { requirePermission, PERMISSIONS } from "@/app/api/_platform/auth"
 import { jsonError, jsonOk } from "@/app/api/_platform/http"
-import { getMysqlPool } from "@/lib/server/mysql"
+import { prisma } from "@/lib/server/prisma"
 import type { Plan } from "@/features/plans/types"
+
+export const runtime = "nodejs"
+
+function toIso(value: any) {
+  if (!value) return value
+  return value instanceof Date ? value.toISOString() : value
+}
 
 function rowToPlan(row: any): Plan {
   return {
@@ -18,9 +25,9 @@ function rowToPlan(row: any): Plan {
     maxUsers: Number(row.max_users ?? 0),
     isActive: Boolean(row.is_active),
     featuresJson: row.features_json ?? undefined,
-    createdAt: row.created_at,
+    createdAt: toIso(row.created_at),
     createdBy: row.created_by != null ? String(row.created_by) : undefined,
-    updatedAt: row.updated_at,
+    updatedAt: toIso(row.updated_at),
     updatedBy: row.updated_by != null ? String(row.updated_by) : undefined,
   }
 }
@@ -30,34 +37,8 @@ export async function GET() {
   if (!auth.ok) return auth.response
 
   try {
-    const pool = getMysqlPool()
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        plan_code,
-        name_en,
-        name_ar,
-        description,
-        billing_cycle,
-        currency_code,
-        price,
-        monthly_price,
-        yearly_price,
-        max_branches,
-        max_users,
-        features_json,
-        is_active,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      FROM plans
-      ORDER BY id DESC
-      `
-    )
-
-    return jsonOk((rows as any[]).map(rowToPlan))
+    const rows = await prisma.plans.findMany({ orderBy: { id: "desc" } })
+    return jsonOk(rows.map(rowToPlan))
   } catch (err: any) {
     return jsonError(400, "BAD_REQUEST", err?.message ?? "Failed to load plans")
   }
@@ -87,106 +68,34 @@ export async function POST(req: Request) {
   }
 
   try {
-    const pool = getMysqlPool()
     const now = new Date()
 
-    const params = {
-      plan_code: body.planCode,
-      name_en: body.nameEn,
-      name_ar: body.nameAr ?? null,
-      description: body.description ?? null,
-      billing_cycle: body.billingCycle,
-      currency_code: body.currencyCode,
-      price: body.monthlyPrice ?? 0,
-      monthly_price: body.monthlyPrice ?? 0,
-      yearly_price: body.yearlyPrice ?? 0,
-      max_branches: body.maxBranches ?? null,
-      max_users: body.maxUsers ?? null,
-      features_json: body.featuresJson ?? null,
-      is_active: body.isActive ? 1 : 0,
-      created_at: now,
-      created_by: null,
-      updated_at: now,
-      updated_by: null,
-    }
+    const created = await prisma.plans.create({
+      data: {
+        plan_code: body.planCode,
+        name_en: body.nameEn,
+        name_ar: body.nameAr ?? null,
+        description: body.description ?? null,
+        billing_cycle: body.billingCycle,
+        currency_code: body.currencyCode,
+        price: (body.monthlyPrice ?? 0) as any,
+        monthly_price: (body.monthlyPrice ?? 0) as any,
+        yearly_price: (body.yearlyPrice ?? 0) as any,
+        max_branches: body.maxBranches ?? null,
+        max_users: body.maxUsers ?? null,
+        features_json: body.featuresJson ?? null,
+        is_active: Boolean(body.isActive),
+        created_at: now,
+        created_by: null,
+        updated_at: now,
+        updated_by: null,
+      } as any,
+    })
 
-    const [result] = await pool.query(
-      `
-      INSERT INTO plans (
-        plan_code,
-        name_en,
-        name_ar,
-        description,
-        billing_cycle,
-        currency_code,
-        price,
-        monthly_price,
-        yearly_price,
-        max_branches,
-        max_users,
-        features_json,
-        is_active,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      ) VALUES (
-        :plan_code,
-        :name_en,
-        :name_ar,
-        :description,
-        :billing_cycle,
-        :currency_code,
-        :price,
-        :monthly_price,
-        :yearly_price,
-        :max_branches,
-        :max_users,
-        :features_json,
-        :is_active,
-        :created_at,
-        :created_by,
-        :updated_at,
-        :updated_by
-      )
-      `,
-      params as any
-    )
-
-    const insertedId = (result as any).insertId
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        plan_code,
-        name_en,
-        name_ar,
-        description,
-        billing_cycle,
-        currency_code,
-        price,
-        monthly_price,
-        yearly_price,
-        max_branches,
-        max_users,
-        features_json,
-        is_active,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      FROM plans
-      WHERE id = ?
-      LIMIT 1
-      `,
-      [insertedId]
-    )
-
-    const row = (rows as any[])[0]
-    return jsonOk(rowToPlan(row), { status: 201 })
+    return jsonOk(rowToPlan(created), { status: 201 })
   } catch (err: any) {
     const message =
-      err?.code === "ER_DUP_ENTRY"
+      err?.code === "P2002" || err?.code === "ER_DUP_ENTRY"
         ? "Duplicate plan code"
         : err?.message ?? "Failed to create plan"
     return jsonError(400, "BAD_REQUEST", message)

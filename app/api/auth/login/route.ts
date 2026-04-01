@@ -4,7 +4,7 @@ import {
   type SessionPayload,
 } from "@/app/api/_platform/auth"
 import { jsonError, jsonOk } from "@/app/api/_platform/http"
-import { getMysqlPool } from "@/lib/server/mysql"
+import { prisma } from "@/lib/server/prisma"
 
 type LoginBody = {
   email?: string
@@ -68,22 +68,24 @@ async function verifyPassword(password: string, stored: string) {
 }
 
 async function ensureSuperAdminSeed() {
-  const pool = getMysqlPool()
   const defaults = getSuperAdminDefaults()
-  const [rows] = await pool.query(`SELECT id, email FROM super_admin_users WHERE email = ? LIMIT 1`, [
-    defaults.email,
-  ])
-  const existing = (rows as any[])[0]
+  const existing = await prisma.super_admin_users.findFirst({
+    where: { email: defaults.email },
+    select: { id: true },
+  })
   if (existing?.id) return
 
   const passwordHash = await hashPassword(defaults.password)
-  await pool.query(
-    `
-    INSERT INTO super_admin_users (full_name, email, mobile, password_hash, status, last_login_at)
-    VALUES (?, ?, NULL, ?, 'ACTIVE', NULL)
-    `,
-    [defaults.fullName, defaults.email, passwordHash]
-  )
+  await prisma.super_admin_users.create({
+    data: {
+      full_name: defaults.fullName,
+      email: defaults.email,
+      mobile: null,
+      password_hash: passwordHash,
+      status: "ACTIVE",
+      last_login_at: null,
+    } as any,
+  })
 }
 
 export async function POST(req: Request) {
@@ -102,19 +104,19 @@ export async function POST(req: Request) {
 
   try {
     await ensureSuperAdminSeed()
-    const pool = getMysqlPool()
 
     // 1) Super admin users
-    const [saRows] = await pool.query(
-      `SELECT id, full_name, email, password_hash, status FROM super_admin_users WHERE email = ? LIMIT 1`,
-      [email]
-    )
-    const sa = (saRows as any[])[0]
+    const sa = await prisma.super_admin_users.findFirst({
+      where: { email },
+    })
     if (sa) {
       const ok = sa.status?.toUpperCase?.() !== "INACTIVE" && (await verifyPassword(password, sa.password_hash))
       if (!ok) return jsonError(401, "UNAUTHORIZED", "Invalid credentials")
 
-      await pool.query(`UPDATE super_admin_users SET last_login_at = NOW() WHERE id = ?`, [sa.id])
+      await prisma.super_admin_users.update({
+        where: { id: sa.id },
+        data: { last_login_at: new Date() } as any,
+      })
 
       const payload: SessionPayload = {
         user: {
@@ -133,16 +135,10 @@ export async function POST(req: Request) {
     }
 
     // 2) Tenant users
-    const [userRows] = await pool.query(
-      `
-      SELECT id, full_name_en, email, password_hash, status
-      FROM users
-      WHERE LOWER(email) = ?
-      LIMIT 1
-      `,
-      [email]
-    )
-    const user = (userRows as any[])[0]
+    const user = await prisma.users.findFirst({
+      where: { email },
+      select: { id: true, full_name_en: true, email: true, password_hash: true, status: true },
+    })
     if (!user) return jsonError(401, "UNAUTHORIZED", "Invalid credentials")
     if (String(user.status || "").toUpperCase() !== "ACTIVE") {
       return jsonError(401, "UNAUTHORIZED", "User is not active")
@@ -150,7 +146,10 @@ export async function POST(req: Request) {
     const ok = await verifyPassword(password, user.password_hash)
     if (!ok) return jsonError(401, "UNAUTHORIZED", "Invalid credentials")
 
-    await pool.query(`UPDATE users SET last_login_at = NOW() WHERE id = ?`, [user.id])
+    await prisma.users.update({
+      where: { id: user.id },
+      data: { last_login_at: new Date() } as any,
+    })
 
     const payload: SessionPayload = {
       user: {

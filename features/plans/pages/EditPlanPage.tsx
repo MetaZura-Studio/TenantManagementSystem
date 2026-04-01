@@ -26,6 +26,7 @@ import { Switch } from "@/components/ui/switch"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { usePlan, useUpdatePlan } from "../hooks"
 import { useCurrencies } from "@/features/currency/hooks"
 import { planSchema } from "../schemas"
@@ -148,7 +149,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="planCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Plan Code</FormLabel>
+                      <RequiredLabel>Plan Code</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter plan code" {...field} />
                       </FormControl>
@@ -162,7 +163,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="nameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name (English)</FormLabel>
+                      <RequiredLabel>Name (English)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter plan name (English)" {...field} />
                       </FormControl>
@@ -176,7 +177,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="nameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name (Arabic)</FormLabel>
+                      <RequiredLabel>Name (Arabic)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter plan name (Arabic)" dir="rtl" {...field} />
                       </FormControl>
@@ -190,7 +191,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="billingCycle"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Billing Cycle</FormLabel>
+                      <RequiredLabel>Billing Cycle</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -212,7 +213,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="currencyCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Currency</FormLabel>
+                      <RequiredLabel>Currency</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -237,7 +238,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="monthlyPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Monthly Price</FormLabel>
+                      <RequiredLabel>Monthly Price</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -257,7 +258,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="yearlyPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Yearly Price</FormLabel>
+                      <RequiredLabel>Yearly Price</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -277,7 +278,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="maxBranches"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max Branches</FormLabel>
+                      <RequiredLabel>Max Branches</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -296,7 +297,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="maxUsers"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max Users</FormLabel>
+                      <RequiredLabel>Max Users</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"

@@ -1,7 +1,14 @@
 import { requirePermission, PERMISSIONS } from "@/app/api/_platform/auth"
 import { jsonError, jsonOk } from "@/app/api/_platform/http"
-import { getMysqlPool } from "@/lib/server/mysql"
+import { prisma } from "@/lib/server/prisma"
 import type { TenantSubscription } from "@/features/tenant-subscriptions/types"
+
+export const runtime = "nodejs"
+
+function toIso(value: any) {
+  if (!value) return value
+  return value instanceof Date ? value.toISOString() : value
+}
 
 function rowToSubscription(row: any): TenantSubscription {
   return {
@@ -10,12 +17,12 @@ function rowToSubscription(row: any): TenantSubscription {
     tenantId: String(row.tenant_id),
     planId: String(row.plan_id),
     status: row.status,
-    startDate: row.start_date,
-    endDate: row.end_date,
-    currentPeriodStart: row.current_period_start ?? undefined,
-    currentPeriodEnd: row.current_period_end ?? undefined,
-    lockedAt: row.auto_lock_date ?? undefined,
-    canceledAt: row.canceled_at ?? undefined,
+    startDate: toIso(row.start_date),
+    endDate: toIso(row.end_date),
+    currentPeriodStart: toIso(row.current_period_start) ?? undefined,
+    currentPeriodEnd: toIso(row.current_period_end) ?? undefined,
+    lockedAt: toIso(row.auto_lock_date) ?? undefined,
+    canceledAt: toIso(row.canceled_at) ?? undefined,
 
     billingCurrency: row.billing_currency_code,
     unitPrice: Number(row.unit_price ?? 0),
@@ -52,37 +59,10 @@ export async function GET() {
   if (!auth.ok) return auth.response
 
   try {
-    const pool = getMysqlPool()
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        subscription_code,
-        tenant_id,
-        plan_id,
-        status,
-        start_date,
-        end_date,
-        current_period_start,
-        current_period_end,
-        auto_lock_date,
-        billing_currency_code,
-        unit_price,
-        auto_renew,
-        cancel_at_period_end,
-        canceled_at,
-        override_notes,
-        notes,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      FROM tenant_subscriptions
-      ORDER BY id DESC
-      `
-    )
-
-    return jsonOk((rows as any[]).map(rowToSubscription))
+    const rows = await prisma.tenant_subscriptions.findMany({
+      orderBy: { id: "desc" },
+    })
+    return jsonOk(rows.map(rowToSubscription))
   } catch (err: any) {
     return jsonError(400, "BAD_REQUEST", err?.message ?? "Failed to load subscriptions")
   }
@@ -118,121 +98,36 @@ export async function POST(req: Request) {
   }
 
   try {
-    const pool = getMysqlPool()
     const now = new Date()
-
-    const params = {
-      subscription_code: subscriptionCode,
-      tenant_id: tenantId,
-      plan_id: planId,
-      status,
-      start_date: startDate,
-      end_date: endDate,
-      current_period_start: body.currentPeriodStart ?? null,
-      current_period_end: body.currentPeriodEnd ?? null,
-      auto_lock_date: body.lockedAt ?? null,
-      billing_currency_code: billingCurrency,
-      unit_price: unitPrice,
-      auto_renew: autoRenew ? 1 : 0,
-      cancel_at_period_end: cancelAtPeriodEnd ? 1 : 0,
-      canceled_at: body.canceledAt ?? null,
-      overridden_by_admin: 0,
-      override_notes: body.overrideNotes ?? null,
-      notes: body.notes ?? null,
-      created_at: now,
-      created_by: null,
-      updated_at: now,
-      updated_by: null,
-    }
-
-    const [result] = await pool.query(
-      `
-      INSERT INTO tenant_subscriptions (
-        subscription_code,
-        tenant_id,
-        plan_id,
+    const created = await prisma.tenant_subscriptions.create({
+      data: {
+        subscription_code: subscriptionCode,
+        tenant_id: tenantId,
+        plan_id: planId,
         status,
-        start_date,
-        end_date,
-        current_period_start,
-        current_period_end,
-        auto_lock_date,
-        billing_currency_code,
-        unit_price,
-        auto_renew,
-        cancel_at_period_end,
-        canceled_at,
-        overridden_by_admin,
-        override_notes,
-        notes,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      ) VALUES (
-        :subscription_code,
-        :tenant_id,
-        :plan_id,
-        :status,
-        :start_date,
-        :end_date,
-        :current_period_start,
-        :current_period_end,
-        :auto_lock_date,
-        :billing_currency_code,
-        :unit_price,
-        :auto_renew,
-        :cancel_at_period_end,
-        :canceled_at,
-        :overridden_by_admin,
-        :override_notes,
-        :notes,
-        :created_at,
-        :created_by,
-        :updated_at,
-        :updated_by
-      )
-      `,
-      params as any
-    )
-
-    const insertedId = (result as any).insertId
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        subscription_code,
-        tenant_id,
-        plan_id,
-        status,
-        start_date,
-        end_date,
-        current_period_start,
-        current_period_end,
-        auto_lock_date,
-        billing_currency_code,
-        unit_price,
-        auto_renew,
-        cancel_at_period_end,
-        canceled_at,
-        override_notes,
-        notes,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      FROM tenant_subscriptions
-      WHERE id = ?
-      LIMIT 1
-      `,
-      [insertedId]
-    )
-
-    const row = (rows as any[])[0]
-    return jsonOk(rowToSubscription(row), { status: 201 })
+        start_date: new Date(startDate) as any,
+        end_date: new Date(endDate) as any,
+        current_period_start: body.currentPeriodStart ? (new Date(String(body.currentPeriodStart)) as any) : null,
+        current_period_end: body.currentPeriodEnd ? (new Date(String(body.currentPeriodEnd)) as any) : null,
+        auto_lock_date: body.lockedAt ? (new Date(String(body.lockedAt)) as any) : null,
+        billing_currency_code: billingCurrency,
+        unit_price: unitPrice as any,
+        auto_renew: Boolean(autoRenew),
+        cancel_at_period_end: Boolean(cancelAtPeriodEnd),
+        canceled_at: body.canceledAt ? (new Date(String(body.canceledAt)) as any) : null,
+        overridden_by_admin: false,
+        override_notes: body.overrideNotes ?? null,
+        notes: body.notes ?? null,
+        created_at: now,
+        created_by: null,
+        updated_at: now,
+        updated_by: null,
+      } as any,
+    })
+    return jsonOk(rowToSubscription(created), { status: 201 })
   } catch (err: any) {
     const message =
-      err?.code === "ER_DUP_ENTRY"
+      err?.code === "P2002" || err?.code === "ER_DUP_ENTRY"
         ? "Duplicate subscription code"
         : err?.message ?? "Failed to create subscription"
     return jsonError(400, "BAD_REQUEST", message)

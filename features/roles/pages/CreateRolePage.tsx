@@ -25,6 +25,7 @@ import {
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { useCreateRole } from "../hooks"
 import { roleSchema } from "../schemas"
 import type { Role } from "../types"
@@ -133,7 +134,7 @@ export function CreateRolePage() {
                   name="roleName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role Name</FormLabel>
+                      <RequiredLabel>Role Name</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter role name" {...field} />
                       </FormControl>
@@ -147,7 +148,7 @@ export function CreateRolePage() {
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <RequiredLabel>Status</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>

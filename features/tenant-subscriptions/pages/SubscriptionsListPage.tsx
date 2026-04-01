@@ -10,10 +10,22 @@ import { GlassCard, GlassCardContent } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
 import { useSubscriptions, useDeleteSubscription } from "../hooks"
+import { useTenants } from "@/features/tenants/hooks"
+import { usePlans } from "@/features/plans/hooks"
 import type { TenantSubscription } from "../types"
 import { ColumnDef } from "@tanstack/react-table"
 import { Pencil, Trash2, Plus, Eye } from "lucide-react"
 import Link from "next/link"
+
+function formatDateOnly(value: unknown): string {
+  const s = String(value ?? "").trim()
+  if (!s) return "—"
+  // Handles ISO strings like 2026-03-31T00:00:00.000Z
+  if (s.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10)
+  const ts = Date.parse(s)
+  if (!Number.isNaN(ts)) return new Date(ts).toISOString().slice(0, 10)
+  return s
+}
 
 export function SubscriptionsListPage() {
   const router = useRouter()
@@ -21,6 +33,8 @@ export function SubscriptionsListPage() {
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<string | null>(null)
 
   const { data: subscriptions = [], isLoading } = useSubscriptions()
+  const { data: tenants = [] } = useTenants()
+  const { data: plans = [] } = usePlans()
   const deleteMutation = useDeleteSubscription()
 
   const handleDelete = (id: string) => {
@@ -55,12 +69,27 @@ export function SubscriptionsListPage() {
       header: "Subscription ID",
     },
     {
-      accessorKey: "tenantId",
-      header: "Tenant ID",
+      id: "tenant",
+      header: "Tenant",
+      cell: ({ row }) => {
+        const sub = row.original
+        const tenant = tenants.find((t) => t.id === sub.tenantId)
+        const label = tenant?.shopNameEn || tenant?.tenantCode || sub.tenantId
+        return (
+          <Link className="text-primary hover:underline" href={`/tenants/${sub.tenantId}`}>
+            {label}
+          </Link>
+        )
+      },
     },
     {
-      accessorKey: "planId",
-      header: "Plan ID",
+      id: "plan",
+      header: "Plan",
+      cell: ({ row }) => {
+        const sub = row.original
+        const plan = plans.find((p) => p.id === sub.planId)
+        return plan?.nameEn || plan?.planCode || sub.planId
+      },
     },
     {
       accessorKey: "status",
@@ -70,10 +99,12 @@ export function SubscriptionsListPage() {
     {
       accessorKey: "startDate",
       header: "Start Date",
+      cell: ({ row }) => formatDateOnly(row.original.startDate),
     },
     {
       accessorKey: "currentPeriodEnd",
       header: "Period End",
+      cell: ({ row }) => formatDateOnly(row.original.currentPeriodEnd ?? row.original.endDate),
     },
     {
       id: "actions",

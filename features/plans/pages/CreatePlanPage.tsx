@@ -25,6 +25,7 @@ import { Switch } from "@/components/ui/switch"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { useCreatePlan } from "../hooks"
 import { useCurrencies } from "@/features/currency/hooks"
 import { planSchema } from "../schemas"
@@ -111,7 +112,7 @@ export function CreatePlanPage() {
                   name="planCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Plan Code</FormLabel>
+                      <RequiredLabel>Plan Code</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter plan code" {...field} />
                       </FormControl>
@@ -125,7 +126,7 @@ export function CreatePlanPage() {
                   name="nameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name (English)</FormLabel>
+                      <RequiredLabel>Name (English)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter plan name (English)" {...field} />
                       </FormControl>
@@ -139,7 +140,7 @@ export function CreatePlanPage() {
                   name="nameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name (Arabic)</FormLabel>
+                      <RequiredLabel>Name (Arabic)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter plan name (Arabic)" dir="rtl" {...field} />
                       </FormControl>
@@ -153,7 +154,7 @@ export function CreatePlanPage() {
                   name="billingCycle"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Billing Cycle</FormLabel>
+                      <RequiredLabel>Billing Cycle</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -175,7 +176,7 @@ export function CreatePlanPage() {
                   name="currencyCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Currency</FormLabel>
+                      <RequiredLabel>Currency</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -200,7 +201,7 @@ export function CreatePlanPage() {
                   name="monthlyPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Monthly Price</FormLabel>
+                      <RequiredLabel>Monthly Price</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -221,7 +222,7 @@ export function CreatePlanPage() {
                   name="yearlyPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Yearly Price</FormLabel>
+                      <RequiredLabel>Yearly Price</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -242,7 +243,7 @@ export function CreatePlanPage() {
                   name="maxBranches"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max Branches</FormLabel>
+                      <RequiredLabel>Max Branches</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -262,7 +263,7 @@ export function CreatePlanPage() {
                   name="maxUsers"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max Users</FormLabel>
+                      <RequiredLabel>Max Users</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"

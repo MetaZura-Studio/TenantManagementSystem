@@ -29,7 +29,6 @@ export function TenantsListPage() {
   const [tenantToDelete, setTenantToDelete] = useState<string | null>(null)
   const [filters, setFilters] = useState({
     tenantName: "",
-    status: "All",
     subscriptionStatus: "All",
   })
 
@@ -38,9 +37,6 @@ export function TenantsListPage() {
 
   const filteredTenants = tenants.filter((tenant) => {
     if (filters.tenantName && !tenant.shopNameEn.toLowerCase().includes(filters.tenantName.toLowerCase())) {
-      return false
-    }
-    if (filters.status !== "All" && tenant.status !== filters.status) {
       return false
     }
     if (filters.subscriptionStatus !== "All" && tenant.subscriptionStatus !== filters.subscriptionStatus) {
@@ -163,22 +159,6 @@ export function TenantsListPage() {
                 value={filters.tenantName}
                 onChange={(e) => setFilters({ ...filters, tenantName: e.target.value })}
               />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium">Status</label>
-              <Select
-                value={filters.status}
-                onValueChange={(value) => setFilters({ ...filters, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium">Subscription Status</label>

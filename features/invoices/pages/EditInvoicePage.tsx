@@ -24,6 +24,7 @@ import {
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { useInvoice, useUpdateInvoice } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { useSubscriptions } from "@/features/tenant-subscriptions/hooks"
@@ -136,7 +137,7 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
                   name="tenantId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tenant</FormLabel>
+                      <RequiredLabel>Tenant</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -161,7 +162,7 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
                   name="subscriptionId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Subscription</FormLabel>
+                      <RequiredLabel>Subscription</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -186,7 +187,7 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
                   name="periodStart"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Period Start</FormLabel>
+                      <RequiredLabel>Period Start</RequiredLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -200,7 +201,7 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
                   name="periodEnd"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Period End</FormLabel>
+                      <RequiredLabel>Period End</RequiredLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -214,7 +215,7 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
                   name="issueDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Issue Date</FormLabel>
+                      <RequiredLabel>Issue Date</RequiredLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -228,7 +229,7 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
                   name="dueDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Due Date</FormLabel>
+                      <RequiredLabel>Due Date</RequiredLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -242,7 +243,7 @@ export function EditInvoicePage({ invoiceId }: EditInvoicePageProps) {
                   name="currencyCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Currency</FormLabel>
+                      <RequiredLabel>Currency</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>

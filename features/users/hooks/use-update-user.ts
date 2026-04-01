@@ -7,7 +7,7 @@ export function useUpdateUser() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<User> }) =>
-      usersApi.update(id, updates),
+      usersApi.update({ id, ...updates }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(variables.id) })

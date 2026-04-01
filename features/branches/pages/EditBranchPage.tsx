@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -25,6 +25,12 @@ import {
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
+import {
+  getCitiesByCountryAndStateName,
+  getCountries,
+  getStatesByCountryName,
+} from "@/lib/geo/locations"
 import { useBranch, useUpdateBranch } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { branchSchema } from "../schemas"
@@ -58,6 +64,19 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
       remarks: "",
     },
   })
+
+  const selectedCountry = form.watch("country")
+  const selectedState = form.watch("state")
+
+  const countryOptions = useMemo(() => getCountries(), [])
+  const stateOptions = useMemo(
+    () => getStatesByCountryName(selectedCountry),
+    [selectedCountry]
+  )
+  const cityOptions = useMemo(
+    () => getCitiesByCountryAndStateName(selectedCountry, selectedState),
+    [selectedCountry, selectedState]
+  )
 
   useEffect(() => {
     if (!branch) return
@@ -133,7 +152,7 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
                   name="tenantId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tenant</FormLabel>
+                      <RequiredLabel>Tenant</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -158,7 +177,7 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
                   name="branchCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Branch Code</FormLabel>
+                      <RequiredLabel>Branch Code</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter branch code" {...field} />
                       </FormControl>
@@ -172,7 +191,7 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
                   name="nameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Branch Name (EN)</FormLabel>
+                      <RequiredLabel>Branch Name (EN)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter branch name (English)" {...field} />
                       </FormControl>
@@ -186,7 +205,7 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
                   name="nameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Branch Name (AR)</FormLabel>
+                      <RequiredLabel>Branch Name (AR)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter branch name (Arabic)" {...field} />
                       </FormControl>
@@ -200,7 +219,7 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone</FormLabel>
+                      <RequiredLabel>Phone</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter phone" {...field} />
                       </FormControl>
@@ -214,7 +233,7 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
                   name="contactName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Name</FormLabel>
+                      <RequiredLabel>Contact Name</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter contact name" {...field} />
                       </FormControl>
@@ -228,7 +247,7 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <RequiredLabel>Status</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -250,51 +269,9 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
                   name="address"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Address</FormLabel>
+                      <RequiredLabel>Address</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter city" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>State</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter state" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="zipCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Zip Code</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter zip code" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -306,10 +283,113 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
                   name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Country</FormLabel>
+                      <RequiredLabel>Country</RequiredLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value)
+                          form.setValue("state", "", { shouldDirty: true, shouldValidate: true })
+                          form.setValue("city", "", { shouldDirty: true, shouldValidate: true })
+                        }}
+                        value={field.value ?? ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder="Select country"
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {countryOptions.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <RequiredLabel>State</RequiredLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value)
+                          form.setValue("city", "", { shouldDirty: true, shouldValidate: true })
+                        }}
+                        value={field.value ?? ""}
+                        disabled={!selectedCountry}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={selectedCountry ? "Select state" : "Select country first"}
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {stateOptions.map((s) => (
+                            <SelectItem key={s.value} value={s.value}>
+                              {s.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="zipCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <RequiredLabel>Zip Code</RequiredLabel>
                       <FormControl>
-                        <Input placeholder="Enter country" {...field} />
+                        <Input placeholder="Enter zip code" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <RequiredLabel>City</RequiredLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value ?? ""}
+                        disabled={!selectedCountry || !selectedState}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                selectedCountry && selectedState
+                                  ? "Select city"
+                                  : "Select country and state first"
+                              }
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {cityOptions.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

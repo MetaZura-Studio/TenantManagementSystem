@@ -102,6 +102,7 @@ export function BranchesListPage() {
     {
       accessorKey: "phone",
       header: "Phone",
+      cell: ({ row }) => row.original.phone || "-",
     },
     {
       accessorKey: "contactName",
@@ -111,6 +112,7 @@ export function BranchesListPage() {
     {
       accessorKey: "city",
       header: "City",
+      cell: ({ row }) => row.original.city || "-",
     },
     {
       accessorKey: "status",
@@ -152,7 +154,16 @@ export function BranchesListPage() {
           { label: "Branches" },
         ]}
         actions={
-          <Button onClick={() => router.push("/branches/new")} size="lg">
+          <Button
+            onClick={() =>
+              router.push(
+                filters.tenantId && filters.tenantId !== "All"
+                  ? `/branches/new?tenantId=${encodeURIComponent(filters.tenantId)}`
+                  : "/branches/new"
+              )
+            }
+            size="lg"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Branch
           </Button>

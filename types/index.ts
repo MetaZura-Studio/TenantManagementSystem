@@ -14,7 +14,7 @@ export const MODULES = [
 export const PERMISSION_ACTIONS = ["view", "create", "edit", "delete"] as const
 
 // Re-export commonly used types for convenience
-export type { TenantStatus, SubscriptionStatus, OwnerType } from "@/features/tenants/types"
+export type { TenantStatus, SubscriptionStatus } from "@/features/tenants/types"
 export type { UserStatus } from "@/features/users/types"
 export type { PaymentStatus, PaymentMethod } from "@/features/payments/types"
 export type { InvoiceStatus, LineType } from "@/features/invoices/types"

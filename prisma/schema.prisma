@@ -1,0 +1,304 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model audit_logs {
+  id                   Int      @id @default(autoincrement())
+  actor_type           String   @db.VarChar(20)
+  actor_super_admin_id Int?
+  actor_user_id        Int?
+  tenant_id            Int?
+  action               String   @db.VarChar(100)
+  entity_type          String   @db.VarChar(100)
+  entity_id            Int
+  old_value_json       String?  @db.Text
+  new_value_json       String?  @db.Text
+  ip_address           String?  @db.VarChar(50)
+  user_agent           String?  @db.VarChar(255)
+  created_at           DateTime @db.DateTime(0)
+}
+
+model branches {
+  id           Int      @id @default(autoincrement())
+  tenant_id    Int
+  branch_code  String   @db.VarChar(50)
+  name_en      String   @db.VarChar(100)
+  name_ar      String?  @db.VarChar(100)
+  address      String?  @db.VarChar(255)
+  city         String?  @db.VarChar(100)
+  state        String?  @db.VarChar(100)
+  zip_code     String?  @db.VarChar(30)
+  country      String?  @db.VarChar(100)
+  phone        String?  @db.VarChar(20)
+  email        String?  @db.VarChar(150)
+  contact_name String?  @db.VarChar(100)
+  remarks      String?  @db.Text
+  status       String   @db.VarChar(20)
+  created_at   DateTime @db.DateTime(0)
+  created_by   Int?
+  updated_at   DateTime @db.DateTime(0)
+  updated_by   Int?
+
+  @@unique([tenant_id, branch_code], map: "uniq_tenant_branch")
+}
+
+model broadcast_messages {
+  id               Int       @id @default(autoincrement())
+  title            String    @db.VarChar(100)
+  message          String    @db.VarChar(500)
+  target_type      String    @db.VarChar(20)
+  target_plan_id   Int?
+  target_tenant_id Int?
+  delivery_type    String    @db.VarChar(20)
+  status           String    @db.VarChar(20)
+  sent_at          DateTime? @db.DateTime(0)
+  created_at       DateTime  @db.DateTime(0)
+  created_by       Int?
+  updated_at       DateTime  @db.DateTime(0)
+  updated_by       Int?
+}
+
+model currencies {
+  code          String   @id @db.VarChar(10)
+  name_en       String   @db.VarChar(50)
+  name_ar       String?  @db.VarChar(50)
+  exchange_rate Decimal  @db.Decimal(18, 6)
+  last_updated  DateTime @db.DateTime(0)
+  created_at    DateTime @db.DateTime(0)
+  created_by    Int?
+  updated_at    DateTime @db.DateTime(0)
+  updated_by    Int?
+}
+
+model feature_flags {
+  id           Int      @id @default(autoincrement())
+  feature_name String   @db.VarChar(100)
+  tenant_id    Int?
+  is_enabled   Boolean  @default(true)
+  notes        String?  @db.VarChar(255)
+  created_at   DateTime @db.DateTime(0)
+  created_by   Int?
+  updated_at   DateTime @db.DateTime(0)
+  updated_by   Int?
+
+  @@unique([feature_name, tenant_id], map: "uniq_feature_tenant")
+}
+
+model invoice_lines {
+  id          Int      @id @default(autoincrement())
+  invoice_id  Int
+  line_type   String   @db.VarChar(30)
+  description String   @db.VarChar(255)
+  qty         Int
+  unit_price  Decimal  @db.Decimal(10, 3)
+  line_amount Decimal  @db.Decimal(10, 3)
+  sort_order  Int?
+  created_at  DateTime @db.DateTime(0)
+  created_by  Int?
+  updated_at  DateTime @db.DateTime(0)
+  updated_by  Int?
+}
+
+model invoices {
+  id              Int       @id @default(autoincrement())
+  invoice_code    String    @unique(map: "invoice_code") @db.VarChar(50)
+  invoice_number  String    @unique(map: "invoice_number") @db.VarChar(50)
+  tenant_id       Int
+  subscription_id Int
+  period_start    DateTime? @db.Date
+  period_end      DateTime? @db.Date
+  issue_date      DateTime  @db.Date
+  due_date        DateTime? @db.Date
+  currency_code   String    @db.VarChar(10)
+  tax             Decimal?  @db.Decimal(10, 3)
+  total_amount    Decimal   @db.Decimal(10, 3)
+  paid_amount     Decimal   @default(0.000) @db.Decimal(10, 3)
+  amount_due      Decimal   @db.Decimal(10, 3)
+  status          String    @db.VarChar(20)
+  notes           String?   @db.Text
+  created_at      DateTime  @db.DateTime(0)
+  created_by      Int?
+  updated_at      DateTime  @db.DateTime(0)
+  updated_by      Int?
+}
+
+model payments {
+  id                Int       @id @default(autoincrement())
+  payment_code      String    @unique(map: "payment_code") @db.VarChar(50)
+  payment_reference String    @unique(map: "payment_reference") @db.VarChar(50)
+  transaction_id    String?   @unique(map: "transaction_id") @db.VarChar(100)
+  tenant_id         Int
+  invoice_id        Int?
+  subscription_id   Int?
+  provider          String?   @db.VarChar(100)
+  payment_method    String    @db.VarChar(30)
+  currency_code     String    @db.VarChar(10)
+  amount            Decimal   @db.Decimal(10, 3)
+  status            String    @db.VarChar(20)
+  transaction_date  DateTime? @db.DateTime(0)
+  paid_at           DateTime? @db.DateTime(0)
+  failure_reason    String?   @db.VarChar(255)
+  billing_name      String?   @db.VarChar(150)
+  billing_email     String?   @db.VarChar(150)
+  billing_address   String?   @db.VarChar(255)
+  created_at        DateTime  @db.DateTime(0)
+  created_by        Int?
+  updated_at        DateTime  @db.DateTime(0)
+  updated_by        Int?
+}
+
+model permissions {
+  id         Int      @id @default(autoincrement())
+  module_key String   @db.VarChar(50)
+  action_key String   @db.VarChar(50)
+  created_at DateTime @db.DateTime(0)
+  created_by Int?
+  updated_at DateTime @db.DateTime(0)
+  updated_by Int?
+
+  @@unique([module_key, action_key], map: "uniq_module_action")
+}
+
+model plans {
+  id            Int      @id @default(autoincrement())
+  plan_code     String   @unique(map: "plan_code") @db.VarChar(50)
+  name_en       String   @db.VarChar(100)
+  name_ar       String?  @db.VarChar(100)
+  description   String?  @db.Text
+  billing_cycle String   @db.VarChar(20)
+  currency_code String   @db.VarChar(10)
+  price         Decimal  @db.Decimal(10, 3)
+  monthly_price Decimal? @db.Decimal(10, 3)
+  yearly_price  Decimal? @db.Decimal(10, 3)
+  max_branches  Int?
+  max_users     Int?
+  features_json String?  @db.Text
+  is_active     Boolean  @default(true)
+  created_at    DateTime @db.DateTime(0)
+  created_by    Int?
+  updated_at    DateTime @db.DateTime(0)
+  updated_by    Int?
+}
+
+model role_permissions {
+  id            Int      @id @default(autoincrement())
+  role_id       Int
+  permission_id Int
+  created_at    DateTime @db.DateTime(0)
+  created_by    Int?
+  updated_at    DateTime @db.DateTime(0)
+  updated_by    Int?
+
+  @@unique([role_id, permission_id], map: "uniq_role_permission")
+}
+
+model roles {
+  id          Int      @id @default(autoincrement())
+  tenant_id   Int?
+  name_en     String   @db.VarChar(100)
+  name_ar     String?  @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  status      String   @db.VarChar(20)
+  created_at  DateTime @db.DateTime(0)
+  created_by  Int?
+  updated_at  DateTime @db.DateTime(0)
+  updated_by  Int?
+}
+
+model super_admin_users {
+  id            Int       @id @default(autoincrement())
+  full_name     String    @db.VarChar(150)
+  email         String    @unique(map: "email") @db.VarChar(150)
+  mobile        String?   @db.VarChar(20)
+  password_hash String    @db.VarChar(255)
+  status        String    @db.VarChar(20)
+  last_login_at DateTime? @db.DateTime(0)
+}
+
+model tenant_subscriptions {
+  id                    Int       @id @default(autoincrement())
+  subscription_code     String    @unique(map: "subscription_code") @db.VarChar(50)
+  tenant_id             Int
+  plan_id               Int
+  status                String    @db.VarChar(20)
+  start_date            DateTime  @db.Date
+  end_date              DateTime  @db.Date
+  current_period_start  DateTime? @db.Date
+  current_period_end    DateTime? @db.Date
+  auto_lock_date        DateTime? @db.Date
+  billing_currency_code String    @db.VarChar(10)
+  unit_price            Decimal   @db.Decimal(10, 3)
+  auto_renew            Boolean   @default(false)
+  cancel_at_period_end  Boolean   @default(false)
+  canceled_at           DateTime? @db.DateTime(0)
+  overridden_by_admin   Boolean   @default(false)
+  override_notes        String?   @db.Text
+  notes                 String?   @db.Text
+  created_at            DateTime  @db.DateTime(0)
+  created_by            Int?
+  updated_at            DateTime  @db.DateTime(0)
+  updated_by            Int?
+}
+
+model tenants {
+  id                      Int       @id @default(autoincrement())
+  tenant_code             String    @unique(map: "tenant_code") @db.VarChar(50)
+  slug                    String    @unique(map: "slug") @db.VarChar(150)
+  shop_name_en            String    @db.VarChar(150)
+  shop_name_ar            String?   @db.VarChar(150)
+  owner_name              String    @db.VarChar(100)
+  owner_email             String    @unique(map: "owner_email") @db.VarChar(150)
+  owner_mobile            String    @db.VarChar(20)
+  tenant_type             String    @db.VarChar(30)
+  contact_person          String?   @db.VarChar(100)
+  address                 String?   @db.VarChar(255)
+  city                    String?   @db.VarChar(100)
+  state                   String?   @db.VarChar(100)
+  zip_code                String?   @db.VarChar(30)
+  country                 String?   @db.VarChar(100)
+  remarks                 String?   @db.Text
+  status                  String    @db.VarChar(20)
+  subscription_status     String    @db.VarChar(20)
+  subscription_start_date DateTime? @db.Date
+  subscription_end_date   DateTime? @db.Date
+  locked_at               DateTime? @db.DateTime(0)
+  suspension_reason       String?   @db.VarChar(255)
+  created_at              DateTime  @db.DateTime(0)
+  created_by              Int?
+  updated_at              DateTime  @db.DateTime(0)
+  updated_by              Int?
+  deleted_at              DateTime? @db.DateTime(0)
+}
+
+model users {
+  id            Int       @id @default(autoincrement())
+  user_code     String    @unique(map: "user_code") @db.VarChar(50)
+  tenant_id     Int
+  branch_id     Int
+  role_id       Int
+  full_name_en  String    @db.VarChar(150)
+  full_name_ar  String    @db.VarChar(150)
+  username      String    @db.VarChar(50)
+  email         String    @db.VarChar(150)
+  mobile        String?   @db.VarChar(20)
+  password_hash String    @db.VarChar(255)
+  address       String?   @db.VarChar(255)
+  city          String?   @db.VarChar(100)
+  state         String?   @db.VarChar(100)
+  zip_code      String?   @db.VarChar(30)
+  country       String?   @db.VarChar(100)
+  status        String    @db.VarChar(20)
+  last_login_at DateTime? @db.DateTime(0)
+  created_at    DateTime  @db.DateTime(0)
+  created_by    Int?
+  updated_at    DateTime  @db.DateTime(0)
+  updated_by    Int?
+
+  @@unique([tenant_id, email], map: "uniq_tenant_email")
+  @@unique([tenant_id, username], map: "uniq_tenant_username")
+}

@@ -97,6 +97,7 @@ export function Pricing({
           const selected = selectedPlanId === plan.id
           const currency = plan.currency ?? "USD"
           const displayValue = isMonthly ? plan.price : plan.yearlyPrice
+          const displayPeriod = isMonthly ? "month" : "year"
 
           return (
             <motion.div
@@ -136,7 +137,7 @@ export function Pricing({
                       />
                     </span>
                     <span className="text-xs font-semibold text-muted-foreground">
-                      /{plan.period}
+                      /{displayPeriod}
                     </span>
                   </div>
 

@@ -1,11 +1,18 @@
 import { requirePermission, PERMISSIONS } from "@/app/api/_platform/auth"
 import { jsonError, jsonOk } from "@/app/api/_platform/http"
-import { getMysqlPool } from "@/lib/server/mysql"
+import { prisma } from "@/lib/server/prisma"
 import type { TenantSubscription } from "@/features/tenant-subscriptions/types"
+
+export const runtime = "nodejs"
 
 function toId(raw: string) {
   const id = Number.parseInt(raw, 10)
   return Number.isFinite(id) ? id : null
+}
+
+function toIso(value: any) {
+  if (!value) return value
+  return value instanceof Date ? value.toISOString() : value
 }
 
 function rowToSubscription(row: any): TenantSubscription {
@@ -15,12 +22,12 @@ function rowToSubscription(row: any): TenantSubscription {
     tenantId: String(row.tenant_id),
     planId: String(row.plan_id),
     status: row.status,
-    startDate: row.start_date,
-    endDate: row.end_date,
-    currentPeriodStart: row.current_period_start ?? undefined,
-    currentPeriodEnd: row.current_period_end ?? undefined,
-    lockedAt: row.auto_lock_date ?? undefined,
-    canceledAt: row.canceled_at ?? undefined,
+    startDate: toIso(row.start_date),
+    endDate: toIso(row.end_date),
+    currentPeriodStart: toIso(row.current_period_start) ?? undefined,
+    currentPeriodEnd: toIso(row.current_period_end) ?? undefined,
+    lockedAt: toIso(row.auto_lock_date) ?? undefined,
+    canceledAt: toIso(row.canceled_at) ?? undefined,
 
     billingCurrency: row.billing_currency_code,
     unitPrice: Number(row.unit_price ?? 0),
@@ -55,39 +62,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   if (!id) return jsonError(400, "BAD_REQUEST", "Invalid id")
 
   try {
-    const pool = getMysqlPool()
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        subscription_code,
-        tenant_id,
-        plan_id,
-        status,
-        start_date,
-        end_date,
-        current_period_start,
-        current_period_end,
-        auto_lock_date,
-        billing_currency_code,
-        unit_price,
-        auto_renew,
-        cancel_at_period_end,
-        canceled_at,
-        override_notes,
-        notes,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      FROM tenant_subscriptions
-      WHERE id = ?
-      LIMIT 1
-      `,
-      [id]
-    )
-
-    const row = (rows as any[])[0]
+    const row = await prisma.tenant_subscriptions.findUnique({ where: { id } })
     if (!row) return jsonError(404, "NOT_FOUND", "Subscription not found")
     return jsonOk(rowToSubscription(row))
   } catch (err: any) {
@@ -113,100 +88,44 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const planId = updates.planId != null ? toIntId(updates.planId) : null
 
   try {
-    const pool = getMysqlPool()
     const now = new Date()
 
-    const updateParams = {
-      id,
-      subscription_code: updates.subscriptionId ?? null,
-      tenant_id: tenantId,
-      plan_id: planId,
-      status: updates.status ?? null,
-      start_date: updates.startDate ?? null,
-      end_date: updates.endDate ?? null,
-      current_period_start: updates.currentPeriodStart ?? null,
-      current_period_end: updates.currentPeriodEnd ?? null,
-      auto_lock_date: updates.lockedAt ?? null,
-      billing_currency_code: updates.billingCurrency ?? updates.billingCurrencyCode ?? null,
-      unit_price: updates.unitPrice ?? null,
-      auto_renew: typeof updates.autoRenew === "boolean" ? (updates.autoRenew ? 1 : 0) : null,
-      cancel_at_period_end:
-        typeof updates.cancelAtPeriodEnd === "boolean"
-          ? updates.cancelAtPeriodEnd
-            ? 1
-            : 0
-          : null,
-      canceled_at: updates.canceledAt ?? null,
-      override_notes: updates.overrideNotes ?? null,
-      notes: updates.notes ?? null,
-      updated_at: now,
-      updated_by: null,
-    }
-
-    await pool.query(
-      `
-      UPDATE tenant_subscriptions
-      SET
-        subscription_code = COALESCE(:subscription_code, subscription_code),
-        tenant_id = COALESCE(:tenant_id, tenant_id),
-        plan_id = COALESCE(:plan_id, plan_id),
-        status = COALESCE(:status, status),
-        start_date = COALESCE(:start_date, start_date),
-        end_date = COALESCE(:end_date, end_date),
-        current_period_start = COALESCE(:current_period_start, current_period_start),
-        current_period_end = COALESCE(:current_period_end, current_period_end),
-        auto_lock_date = COALESCE(:auto_lock_date, auto_lock_date),
-        billing_currency_code = COALESCE(:billing_currency_code, billing_currency_code),
-        unit_price = COALESCE(:unit_price, unit_price),
-        auto_renew = COALESCE(:auto_renew, auto_renew),
-        cancel_at_period_end = COALESCE(:cancel_at_period_end, cancel_at_period_end),
-        canceled_at = COALESCE(:canceled_at, canceled_at),
-        override_notes = COALESCE(:override_notes, override_notes),
-        notes = COALESCE(:notes, notes),
-        updated_at = :updated_at,
-        updated_by = :updated_by
-      WHERE id = :id
-      `,
-      updateParams as any
-    )
-
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        subscription_code,
-        tenant_id,
-        plan_id,
-        status,
-        start_date,
-        end_date,
-        current_period_start,
-        current_period_end,
-        auto_lock_date,
-        billing_currency_code,
-        unit_price,
-        auto_renew,
-        cancel_at_period_end,
-        canceled_at,
-        override_notes,
-        notes,
-        created_at,
-        created_by,
-        updated_at,
-        updated_by
-      FROM tenant_subscriptions
-      WHERE id = ?
-      LIMIT 1
-      `,
-      [id]
-    )
-
-    const row = (rows as any[])[0]
+    const row = await prisma.tenant_subscriptions.update({
+      where: { id },
+      data: {
+        subscription_code: updates.subscriptionId ?? undefined,
+        tenant_id: tenantId ?? undefined,
+        plan_id: planId ?? undefined,
+        status: updates.status ?? undefined,
+        start_date: updates.startDate ? (new Date(String(updates.startDate)) as any) : undefined,
+        end_date: updates.endDate ? (new Date(String(updates.endDate)) as any) : undefined,
+        current_period_start: updates.currentPeriodStart
+          ? (new Date(String(updates.currentPeriodStart)) as any)
+          : undefined,
+        current_period_end: updates.currentPeriodEnd
+          ? (new Date(String(updates.currentPeriodEnd)) as any)
+          : undefined,
+        auto_lock_date: updates.lockedAt ? (new Date(String(updates.lockedAt)) as any) : undefined,
+        billing_currency_code:
+          updates.billingCurrency ?? updates.billingCurrencyCode ?? undefined,
+        unit_price: updates.unitPrice != null ? (Number(updates.unitPrice) as any) : undefined,
+        auto_renew: typeof updates.autoRenew === "boolean" ? Boolean(updates.autoRenew) : undefined,
+        cancel_at_period_end:
+          typeof updates.cancelAtPeriodEnd === "boolean"
+            ? Boolean(updates.cancelAtPeriodEnd)
+            : undefined,
+        canceled_at: updates.canceledAt ? (new Date(String(updates.canceledAt)) as any) : undefined,
+        override_notes: updates.overrideNotes ?? undefined,
+        notes: updates.notes ?? undefined,
+        updated_at: now,
+        updated_by: null,
+      } as any,
+    })
     if (!row) return jsonError(404, "NOT_FOUND", "Subscription not found")
     return jsonOk(rowToSubscription(row))
   } catch (err: any) {
     const message =
-      err?.code === "ER_DUP_ENTRY"
+      err?.code === "P2002" || err?.code === "ER_DUP_ENTRY"
         ? "Duplicate subscription code"
         : err?.message ?? "Failed to update subscription"
     return jsonError(400, "BAD_REQUEST", message)
@@ -221,10 +140,9 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   if (!id) return jsonError(400, "BAD_REQUEST", "Invalid id")
 
   try {
-    const pool = getMysqlPool()
-    const [result] = await pool.query(`DELETE FROM tenant_subscriptions WHERE id = ?`, [id])
-    const affected = (result as any).affectedRows ?? 0
-    if (affected === 0) return jsonError(404, "NOT_FOUND", "Subscription not found")
+    const existing = await prisma.tenant_subscriptions.findUnique({ where: { id } })
+    if (!existing) return jsonError(404, "NOT_FOUND", "Subscription not found")
+    await prisma.tenant_subscriptions.delete({ where: { id } })
     return jsonOk({ ok: true })
   } catch (err: any) {
     return jsonError(400, "BAD_REQUEST", err?.message ?? "Failed to delete subscription")

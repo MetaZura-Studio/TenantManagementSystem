@@ -1,10 +1,15 @@
 import type { Payment } from "@/features/payments/types"
-import { getMysqlPool } from "@/lib/server/mysql"
+import { prisma } from "@/lib/server/prisma"
 import { getInvoice, updateInvoice } from "../invoices/_store"
 
 function toId(raw: string) {
   const id = Number.parseInt(raw, 10)
   return Number.isFinite(id) ? id : null
+}
+
+function toIsoDateTime(value: any) {
+  if (!value) return value
+  return value instanceof Date ? value.toISOString() : value
 }
 
 function paymentRowToPayment(row: any): Payment {
@@ -19,15 +24,15 @@ function paymentRowToPayment(row: any): Payment {
     amount: Number(row.amount ?? 0),
     paymentMethod: row.payment_method,
     status: row.status,
-    transactionDate: row.transaction_date ?? row.created_at,
+    transactionDate: toIsoDateTime(row.transaction_date ?? row.created_at),
     paymentGatewayRef: row.transaction_id ?? undefined,
     failureReason: row.failure_reason ?? undefined,
     billingName: row.billing_name ?? undefined,
     billingEmail: row.billing_email ?? undefined,
     billingAddress: row.billing_address ?? undefined,
-    createdAt: row.created_at,
+    createdAt: toIsoDateTime(row.created_at),
     createdBy: row.created_by != null ? String(row.created_by) : undefined,
-    updatedAt: row.updated_at,
+    updatedAt: toIsoDateTime(row.updated_at),
     updatedBy: row.updated_by != null ? String(row.updated_by) : undefined,
   }
 }
@@ -39,16 +44,11 @@ async function recomputeInvoiceAfterPayment(invoiceId: string) {
   const invoice = await getInvoice(invoiceId)
   if (!invoice) return
 
-  const pool = getMysqlPool()
-  const [rows] = await pool.query(
-    `
-    SELECT COALESCE(SUM(amount), 0) AS total
-    FROM payments
-    WHERE invoice_id = ? AND status = 'SUCCESS'
-    `,
-    [invId]
-  )
-  const total = Number((rows as any[])[0]?.total ?? 0)
+  const agg = await prisma.payments.aggregate({
+    where: { invoice_id: invId, status: "SUCCESS" },
+    _sum: { amount: true },
+  })
+  const total = Number((agg as any)?._sum?.amount ?? 0)
 
   const paidAmount = Math.max(0, total)
   const amountDue = Math.max(0, Number(invoice.totalAmount ?? 0) - paidAmount)
@@ -64,34 +64,7 @@ async function recomputeInvoiceAfterPayment(invoiceId: string) {
 }
 
 export async function listPayments() {
-  const pool = getMysqlPool()
-  const [rows] = await pool.query(
-    `
-    SELECT
-      id,
-      payment_code,
-      payment_reference,
-      transaction_id,
-      tenant_id,
-      invoice_id,
-      subscription_id,
-      payment_method,
-      currency_code,
-      amount,
-      status,
-      transaction_date,
-      failure_reason,
-      billing_name,
-      billing_email,
-      billing_address,
-      created_at,
-      created_by,
-      updated_at,
-      updated_by
-    FROM payments
-    ORDER BY id DESC
-    `
-  )
+  const rows = await prisma.payments.findMany({ orderBy: { id: "desc" } })
   return (rows as any[]).map(paymentRowToPayment)
 }
 
@@ -99,37 +72,7 @@ export async function getPayment(paymentId: string) {
   const id = toId(paymentId)
   if (!id) return undefined
 
-  const pool = getMysqlPool()
-  const [rows] = await pool.query(
-    `
-    SELECT
-      id,
-      payment_code,
-      payment_reference,
-      transaction_id,
-      tenant_id,
-      invoice_id,
-      subscription_id,
-      payment_method,
-      currency_code,
-      amount,
-      status,
-      transaction_date,
-      failure_reason,
-      billing_name,
-      billing_email,
-      billing_address,
-      created_at,
-      created_by,
-      updated_at,
-      updated_by
-    FROM payments
-    WHERE id = ?
-    LIMIT 1
-    `,
-    [id]
-  )
-  const row = (rows as any[])[0]
+  const row = await prisma.payments.findUnique({ where: { id } })
   return row ? paymentRowToPayment(row) : undefined
 }
 
@@ -144,61 +87,37 @@ export async function createPayment(
   const subscriptionId = data.subscriptionId ? toId(data.subscriptionId) : null
   if (!tenantId || !invoiceId) return { error: "INVOICE_NOT_FOUND" }
 
-  const pool = getMysqlPool()
   const now = new Date()
 
-  const [result] = await pool.query(
-    `
-    INSERT INTO payments (
-      payment_code,
-      payment_reference,
-      transaction_id,
-      tenant_id,
-      invoice_id,
-      subscription_id,
-      provider,
-      payment_method,
-      currency_code,
-      amount,
-      status,
-      transaction_date,
-      paid_at,
-      failure_reason,
-      billing_name,
-      billing_email,
-      billing_address,
-      created_at,
-      created_by,
-      updated_at,
-      updated_by
-    ) VALUES (
-      ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, NULL, ?, NULL
-    )
-    `,
-    [
-      data.paymentCode,
-      data.paymentReference,
-      data.paymentGatewayRef ?? null,
-      tenantId,
-      invoiceId,
-      subscriptionId,
-      data.paymentMethod,
-      inv.currencyCode,
-      Number(data.amount ?? 0),
-      data.status,
-      data.transactionDate ?? now,
-      data.failureReason ?? null,
-      data.billingName ?? null,
-      data.billingEmail ?? null,
-      data.billingAddress ?? null,
-      now,
-      now,
-    ]
-  )
+  const createdRow = await prisma.payments.create({
+    data: {
+      payment_code: data.paymentCode,
+      payment_reference: data.paymentReference,
+      transaction_id: data.paymentGatewayRef ?? null,
+      tenant_id: tenantId,
+      invoice_id: invoiceId,
+      subscription_id: subscriptionId,
+      provider: null,
+      payment_method: data.paymentMethod,
+      currency_code: inv.currencyCode,
+      amount: Number(data.amount ?? 0) as any,
+      status: data.status,
+      transaction_date: data.transactionDate ? (new Date(String(data.transactionDate)) as any) : now,
+      paid_at: null,
+      failure_reason: data.failureReason ?? null,
+      billing_name: data.billingName ?? null,
+      billing_email: data.billingEmail ?? null,
+      billing_address: data.billingAddress ?? null,
+      created_at: now,
+      created_by: null,
+      updated_at: now,
+      updated_by: null,
+    } as any,
+  })
 
-  const created = await getPayment(String((result as any).insertId))
+  const created = paymentRowToPayment(createdRow)
   if (created) await recomputeInvoiceAfterPayment(created.invoiceId)
-  return created!
+  return created
 }
 
 export async function updatePayment(paymentId: string, updates: Partial<Payment>) {
@@ -208,32 +127,22 @@ export async function updatePayment(paymentId: string, updates: Partial<Payment>
   const existing = await getPayment(paymentId)
   if (!existing) return undefined
 
-  const pool = getMysqlPool()
   const now = new Date()
 
-  await pool.query(
-    `
-    UPDATE payments
-    SET
-      status = COALESCE(?, status),
-      amount = COALESCE(?, amount),
-      failure_reason = COALESCE(?, failure_reason),
-      transaction_date = COALESCE(?, transaction_date),
-      updated_at = ?,
-      updated_by = NULL
-    WHERE id = ?
-    `,
-    [
-      updates.status ?? null,
-      updates.amount ?? null,
-      updates.failureReason ?? null,
-      updates.transactionDate ?? null,
-      now,
-      id,
-    ]
-  )
-
-  const updated = await getPayment(paymentId)
+  const updatedRow = await prisma.payments.update({
+    where: { id },
+    data: {
+      status: updates.status ?? undefined,
+      amount: updates.amount != null ? (Number(updates.amount) as any) : undefined,
+      failure_reason: updates.failureReason ?? undefined,
+      transaction_date: updates.transactionDate
+        ? (new Date(String(updates.transactionDate)) as any)
+        : undefined,
+      updated_at: now,
+      updated_by: null,
+    } as any,
+  })
+  const updated = paymentRowToPayment(updatedRow)
   if (updated) await recomputeInvoiceAfterPayment(updated.invoiceId)
   return updated
 }
@@ -245,10 +154,8 @@ export async function deletePayment(paymentId: string) {
   const id = toId(paymentId)
   if (!id) return false
 
-  const pool = getMysqlPool()
-  const [result] = await pool.query(`DELETE FROM payments WHERE id = ?`, [id])
-  const affected = (result as any).affectedRows ?? 0
-  if (affected > 0) await recomputeInvoiceAfterPayment(existing.invoiceId)
-  return affected > 0
+  await prisma.payments.delete({ where: { id } })
+  await recomputeInvoiceAfterPayment(existing.invoiceId)
+  return true
 }
 

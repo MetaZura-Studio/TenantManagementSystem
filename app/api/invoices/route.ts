@@ -2,7 +2,7 @@ import { requirePermission, PERMISSIONS } from "@/app/api/_platform/auth"
 import { jsonError, jsonOk } from "@/app/api/_platform/http"
 import type { Invoice } from "@/features/invoices/types"
 import { createInvoice, createInvoiceLine, listInvoices } from "./_store"
-import { getMysqlPool } from "@/lib/server/mysql"
+import { prisma } from "@/lib/server/prisma"
 
 export async function GET() {
   const auth = requirePermission(PERMISSIONS.INVOICES.VIEW)
@@ -45,26 +45,25 @@ export async function POST(req: Request) {
       | null = null
 
     if (body.subscriptionId) {
-      const pool = getMysqlPool()
       const subId = Number.parseInt(String(body.subscriptionId), 10)
       if (Number.isFinite(subId)) {
-        const [rows] = await pool.query(
-          `
-          SELECT
-            ts.subscription_code,
-            ts.tenant_id,
-            ts.plan_id,
-            ts.billing_currency_code,
-            ts.unit_price,
-            p.name_en AS plan_name_en
-          FROM tenant_subscriptions ts
-          LEFT JOIN plans p ON p.id = ts.plan_id
-          WHERE ts.id = ?
-          LIMIT 1
-          `,
-          [subId]
-        )
-        subscriptionMeta = (rows as any[])[0] ?? null
+        const sub = await prisma.tenant_subscriptions.findUnique({
+          where: { id: subId },
+        })
+        if (sub) {
+          const plan = await prisma.plans.findUnique({
+            where: { id: Number(sub.plan_id) },
+            select: { name_en: true },
+          })
+          subscriptionMeta = {
+            subscription_code: sub.subscription_code,
+            tenant_id: Number(sub.tenant_id),
+            plan_id: Number(sub.plan_id),
+            billing_currency_code: sub.billing_currency_code,
+            unit_price: Number(sub.unit_price ?? 0),
+            plan_name_en: plan?.name_en ?? null,
+          }
+        }
       }
     }
 

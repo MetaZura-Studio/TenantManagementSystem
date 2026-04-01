@@ -25,6 +25,7 @@ import {
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { useRole, useUpdateRole } from "../hooks"
 import { roleSchema } from "../schemas"
 import { RBAC_MODULES } from "@/lib/utils/rbac"
@@ -139,7 +140,7 @@ export function EditRolePage({ roleId }: EditRolePageProps) {
                   name="roleName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role Name</FormLabel>
+                      <RequiredLabel>Role Name</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter role name" {...field} />
                       </FormControl>
@@ -153,7 +154,7 @@ export function EditRolePage({ roleId }: EditRolePageProps) {
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <RequiredLabel>Status</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>

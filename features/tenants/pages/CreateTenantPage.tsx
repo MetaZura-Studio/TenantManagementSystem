@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -26,6 +27,8 @@ import {
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
+import { getCitiesByCountryName, getCountries } from "@/lib/geo/locations"
 import { useCreateTenant, useTenants } from "../hooks"
 import { tenantSchema } from "../schemas"
 import type { Tenant } from "../types"
@@ -78,6 +81,13 @@ export function CreateTenantPage() {
     },
   })
 
+  const selectedCountry = form.watch("country")
+  const countryOptions = useMemo(() => getCountries(), [])
+  const cityOptions = useMemo(
+    () => getCitiesByCountryName(selectedCountry),
+    [selectedCountry]
+  )
+
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     // Generate slug from shopNameEn
     const baseSlug = generateSlug(data.shopNameEn)
@@ -111,10 +121,10 @@ export function CreateTenantPage() {
         })
         router.push("/tenants")
       },
-      onError: () => {
+      onError: (err: any) => {
         toast({
           title: "Error",
-          description: "Failed to create tenant",
+          description: err?.message || "Failed to create tenant",
           variant: "destructive",
         })
       },
@@ -145,7 +155,7 @@ export function CreateTenantPage() {
                 name="tenantType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tenant Type</FormLabel>
+                    <RequiredLabel>Tenant Type</RequiredLabel>
                     <FormControl>
                       <RadioGroup
                         value={field.value}
@@ -174,7 +184,7 @@ export function CreateTenantPage() {
                   name="tenantCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tenant Code</FormLabel>
+                      <RequiredLabel>Tenant Code</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter tenant code" {...field} />
                       </FormControl>
@@ -196,7 +206,7 @@ export function CreateTenantPage() {
 
                     return (
                       <FormItem>
-                        <FormLabel>Shop Name (English)</FormLabel>
+                        <RequiredLabel>Shop Name (English)</RequiredLabel>
                         <FormControl>
                           <Input placeholder="Enter shop name in English" {...field} />
                         </FormControl>
@@ -217,7 +227,7 @@ export function CreateTenantPage() {
                   name="shopNameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Shop Name (Arabic)</FormLabel>
+                      <RequiredLabel>Shop Name (Arabic)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter shop name in Arabic" {...field} dir="rtl" />
                       </FormControl>
@@ -232,7 +242,7 @@ export function CreateTenantPage() {
                   name="ownerName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Owner Name</FormLabel>
+                      <RequiredLabel>Owner Name</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter owner name" {...field} />
                       </FormControl>
@@ -247,7 +257,7 @@ export function CreateTenantPage() {
                   name="ownerEmail"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Owner Email</FormLabel>
+                      <RequiredLabel>Owner Email</RequiredLabel>
                       <FormControl>
                         <Input type="email" placeholder="Enter owner email" {...field} />
                       </FormControl>
@@ -262,7 +272,7 @@ export function CreateTenantPage() {
                   name="ownerMobile"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Owner Mobile</FormLabel>
+                      <RequiredLabel>Owner Mobile</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter owner mobile" {...field} />
                       </FormControl>
@@ -277,7 +287,7 @@ export function CreateTenantPage() {
                   name="contactPerson"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Person</FormLabel>
+                      <RequiredLabel>Contact Person</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter contact person" {...field} />
                       </FormControl>
@@ -292,7 +302,7 @@ export function CreateTenantPage() {
                   name="address"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Address</FormLabel>
+                      <RequiredLabel>Address</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter address" {...field} />
                       </FormControl>
@@ -301,16 +311,34 @@ export function CreateTenantPage() {
                   )}
                 />
 
-                {/* City */}
                 <FormField
                   control={form.control}
-                  name="city"
+                  name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter city" {...field} />
-                      </FormControl>
+                      <RequiredLabel>Country</RequiredLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value)
+                          form.setValue("city", "", { shouldDirty: true, shouldValidate: true })
+                        }}
+                        value={field.value ?? ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder="Select country"
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {countryOptions.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -322,7 +350,7 @@ export function CreateTenantPage() {
                   name="zipCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Zip Code</FormLabel>
+                      <RequiredLabel>Zip Code</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter zip code" {...field} />
                       </FormControl>
@@ -331,16 +359,37 @@ export function CreateTenantPage() {
                   )}
                 />
 
-                {/* Country */}
                 <FormField
                   control={form.control}
-                  name="country"
+                  name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Country</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter country" {...field} />
-                      </FormControl>
+                      <RequiredLabel>City</RequiredLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value ?? ""}
+                        disabled={!selectedCountry}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={selectedCountry ? "Select city" : "Select country first"}
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {field.value && !cityOptions.some((c) => c.value === field.value) ? (
+                            <SelectItem key={`selected-city-${field.value}`} value={field.value}>
+                              {field.value}
+                            </SelectItem>
+                          ) : null}
+                          {cityOptions.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -352,7 +401,7 @@ export function CreateTenantPage() {
                   name="timezone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Timezone</FormLabel>
+                      <RequiredLabel>Timezone</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -378,7 +427,7 @@ export function CreateTenantPage() {
                   name="subscriptionStatus"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Subscription Status</FormLabel>
+                      <RequiredLabel>Subscription Status</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
