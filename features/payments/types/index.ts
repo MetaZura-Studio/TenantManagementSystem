@@ -9,6 +9,7 @@ export interface Payment {
   invoiceId: string
   branchId?: string
   subscriptionId?: string
+  currencyCode?: string
   amount: number
   paymentMethod: PaymentMethod
   status: PaymentStatus

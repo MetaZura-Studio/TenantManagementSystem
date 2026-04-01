@@ -7,7 +7,7 @@ export async function GET() {
   const auth = requirePermission(PERMISSIONS.ROLES.VIEW)
   if (!auth.ok) return auth.response
 
-  return jsonOk(listRoles())
+  return jsonOk(await listRoles())
 }
 
 export async function POST(req: Request) {
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     return jsonError(400, "BAD_REQUEST", "Missing required role fields")
   }
 
-  const created = createRole(body)
+  const created = await createRole(body)
   return jsonOk(created, { status: 201 })
 }
 

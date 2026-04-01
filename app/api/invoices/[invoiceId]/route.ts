@@ -10,7 +10,7 @@ export async function GET(
   const auth = requirePermission(PERMISSIONS.INVOICES.VIEW)
   if (!auth.ok) return auth.response
 
-  const inv = getInvoice(params.invoiceId)
+  const inv = await getInvoice(params.invoiceId)
   if (!inv) return jsonError(404, "NOT_FOUND", "Invoice not found")
   return jsonOk(inv)
 }
@@ -29,7 +29,7 @@ export async function PATCH(
     return jsonError(400, "BAD_REQUEST", "Invalid JSON body")
   }
 
-  const updated = updateInvoice(params.invoiceId, updates)
+  const updated = await updateInvoice(params.invoiceId, updates)
   if (!updated) return jsonError(404, "NOT_FOUND", "Invoice not found")
   return jsonOk(updated)
 }
@@ -41,7 +41,7 @@ export async function DELETE(
   const auth = requirePermission(PERMISSIONS.INVOICES.DELETE)
   if (!auth.ok) return auth.response
 
-  const ok = deleteInvoice(params.invoiceId)
+  const ok = await deleteInvoice(params.invoiceId)
   if (!ok) return jsonError(404, "NOT_FOUND", "Invoice not found")
   return jsonOk({ ok: true })
 }

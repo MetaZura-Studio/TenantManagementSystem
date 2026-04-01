@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -41,23 +42,41 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
 
   const form = useForm<z.infer<typeof branchSchema>>({
     resolver: zodResolver(branchSchema),
-    values: branch
-      ? {
-          tenantId: branch.tenantId,
-          branchName: branch.branchName,
-          phoneNumber: branch.phoneNumber,
-          email: branch.email || "",
-          contactPerson: branch.contactPerson || "",
-          addressLine1: branch.addressLine1,
-          addressLine2: branch.addressLine2 || "",
-          city: branch.city,
-          stateProvince: branch.stateProvince,
-          zipPostalCode: branch.zipPostalCode,
-          branchStatus: branch.branchStatus ?? "Active",
-          remarks: branch.remarks || "",
-        }
-      : undefined,
+    defaultValues: {
+      tenantId: "",
+      branchCode: "",
+      nameEn: "",
+      nameAr: "",
+      address: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      country: "",
+      phone: "",
+      contactName: "",
+      status: "ACTIVE",
+      remarks: "",
+    },
   })
+
+  useEffect(() => {
+    if (!branch) return
+    form.reset({
+      tenantId: branch.tenantId,
+      branchCode: branch.branchCode,
+      nameEn: branch.nameEn,
+      nameAr: branch.nameAr,
+      address: branch.address,
+      city: branch.city,
+      state: branch.state,
+      zipCode: branch.zipCode,
+      country: branch.country,
+      phone: branch.phone,
+      contactName: branch.contactName,
+      status: branch.status,
+      remarks: branch.remarks ?? "",
+    })
+  }, [branch, form])
 
   const onSubmit = (data: z.infer<typeof branchSchema>) => {
     updateMutation.mutate(
@@ -93,7 +112,7 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
     <>
       <PageHeader
         title="Edit Branch"
-        subtitle={branch.branchName}
+        subtitle={branch.nameEn}
         breadcrumbs={[
           { label: "Tenant Management", href: "/tenants" },
           { label: "Branches", href: "/branches" },
@@ -124,7 +143,7 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
                         <SelectContent>
                           {tenants.map((tenant) => (
                             <SelectItem key={tenant.id} value={tenant.id}>
-                              {tenant.tenantName}
+                              {tenant.shopNameEn}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -136,12 +155,12 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
 
                 <FormField
                   control={form.control}
-                  name="branchName"
+                  name="branchCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Branch Name</FormLabel>
+                      <FormLabel>Branch Code</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter branch name" {...field} />
+                        <Input placeholder="Enter branch code" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -150,12 +169,12 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
 
                 <FormField
                   control={form.control}
-                  name="phoneNumber"
+                  name="nameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
+                      <FormLabel>Branch Name (EN)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter phone number" {...field} />
+                        <Input placeholder="Enter branch name (English)" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -164,12 +183,12 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
 
                 <FormField
                   control={form.control}
-                  name="email"
+                  name="nameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Branch Name (AR)</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="Enter email" {...field} />
+                        <Input placeholder="Enter branch name (Arabic)" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -178,12 +197,12 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
 
                 <FormField
                   control={form.control}
-                  name="contactPerson"
+                  name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Person</FormLabel>
+                      <FormLabel>Phone</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter contact person" {...field} />
+                        <Input placeholder="Enter phone" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -192,7 +211,21 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
 
                 <FormField
                   control={form.control}
-                  name="branchStatus"
+                  name="contactName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter contact name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="status"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status</FormLabel>
@@ -203,8 +236,8 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Inactive">Inactive</SelectItem>
+                          <SelectItem value="ACTIVE">Active</SelectItem>
+                          <SelectItem value="INACTIVE">Inactive</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -214,26 +247,12 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
 
                 <FormField
                   control={form.control}
-                  name="addressLine1"
+                  name="address"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Address Line 1</FormLabel>
+                      <FormLabel>Address</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter address line 1" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="addressLine2"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Address Line 2</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter address line 2 (optional)" {...field} />
+                        <Input placeholder="Enter address" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -256,12 +275,12 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
 
                 <FormField
                   control={form.control}
-                  name="stateProvince"
+                  name="state"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>State/Province</FormLabel>
+                      <FormLabel>State</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter state/province" {...field} />
+                        <Input placeholder="Enter state" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -270,12 +289,26 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
 
                 <FormField
                   control={form.control}
-                  name="zipPostalCode"
+                  name="zipCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Zip/Postal Code</FormLabel>
+                      <FormLabel>Zip Code</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter zip/postal code" {...field} />
+                        <Input placeholder="Enter zip code" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter country" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

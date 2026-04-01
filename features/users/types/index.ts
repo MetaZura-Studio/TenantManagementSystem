@@ -3,14 +3,13 @@ export type UserStatus = "ACTIVE" | "INACTIVE" | "LOCKED";
 export interface User {
   id: string;
   tenantId: string;
-  branchId: string;
+  branchId?: string;
   roleId: string;
   fullNameEn: string;
   fullNameAr: string;
   username: string;
   email: string;
   mobile: string;
-  passwordHash: string;
   status: UserStatus;
   address?: string;
   zipCode?: string;
@@ -26,7 +25,7 @@ export interface User {
 
 export interface CreateUserPayload {
   tenantId: string;
-  branchId: string;
+  branchId?: string;
   roleId: string;
   fullNameEn: string;
   fullNameAr: string;

@@ -10,7 +10,7 @@ export async function GET(
   const auth = requirePermission(PERMISSIONS.PAYMENTS.VIEW)
   if (!auth.ok) return auth.response
 
-  const payment = getPayment(params.paymentId)
+  const payment = await getPayment(params.paymentId)
   if (!payment) return jsonError(404, "NOT_FOUND", "Payment not found")
   return jsonOk(payment)
 }
@@ -29,7 +29,7 @@ export async function PATCH(
     return jsonError(400, "BAD_REQUEST", "Invalid JSON body")
   }
 
-  const updated = updatePayment(params.paymentId, updates)
+  const updated = await updatePayment(params.paymentId, updates)
   if (!updated) return jsonError(404, "NOT_FOUND", "Payment not found")
   return jsonOk(updated)
 }
@@ -41,7 +41,7 @@ export async function DELETE(
   const auth = requirePermission(PERMISSIONS.PAYMENTS.DELETE)
   if (!auth.ok) return auth.response
 
-  const ok = deletePayment(params.paymentId)
+  const ok = await deletePayment(params.paymentId)
   if (!ok) return jsonError(404, "NOT_FOUND", "Payment not found")
   return jsonOk({ ok: true })
 }

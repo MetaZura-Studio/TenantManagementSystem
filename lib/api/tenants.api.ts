@@ -1,39 +1,48 @@
-import { useStore } from "../store"
 import type { Tenant } from "@/features/tenants/types"
 
-// Simulate API delay
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+async function parseOrThrow(res: Response) {
+  const data = await res.json().catch(() => null)
+  if (res.ok) return data
+  const msg =
+    (data as any)?.error?.message ||
+    (data as any)?.message ||
+    `Request failed (${res.status})`
+  throw new Error(msg)
+}
 
 export const tenantsApi = {
   getAll: async (): Promise<Tenant[]> => {
-    await delay(300)
-    return useStore.getState().tenants
+    const res = await fetch("/api/tenants", { method: "GET" })
+    return (await parseOrThrow(res)) as Tenant[]
   },
   getById: async (id: string): Promise<Tenant | undefined> => {
-    await delay(200)
-    return useStore.getState().tenants.find((t) => t.id === id)
+    const res = await fetch(`/api/tenants/${encodeURIComponent(id)}`, {
+      method: "GET",
+    })
+    return (await parseOrThrow(res)) as Tenant
   },
-  create: async (tenant: Omit<Tenant, "id" | "createdAt" | "updatedAt">): Promise<Tenant> => {
-    await delay(400)
-    const newTenant: Tenant = {
-      ...tenant,
-      id: `tenant-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-    useStore.getState().addTenant(newTenant)
-    return newTenant
+  create: async (
+    tenant: Omit<Tenant, "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy" | "deletedAt">
+  ): Promise<Tenant> => {
+    const res = await fetch("/api/tenants", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(tenant),
+    })
+    return (await parseOrThrow(res)) as Tenant
   },
   update: async (id: string, updates: Partial<Tenant>): Promise<Tenant> => {
-    await delay(400)
-    const tenant = useStore.getState().tenants.find((t) => t.id === id)
-    if (!tenant) throw new Error("Tenant not found")
-    const updated = { ...tenant, ...updates, updatedAt: new Date().toISOString() }
-    useStore.getState().updateTenant(id, updated)
-    return updated
+    const res = await fetch(`/api/tenants/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(updates),
+    })
+    return (await parseOrThrow(res)) as Tenant
   },
   delete: async (id: string): Promise<void> => {
-    await delay(300)
-    useStore.getState().deleteTenant(id)
+    const res = await fetch(`/api/tenants/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    })
+    await parseOrThrow(res)
   },
 }

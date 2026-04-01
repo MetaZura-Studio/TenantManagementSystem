@@ -27,7 +27,7 @@ export function PaymentsListPage() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Payment Receipt - ${payment.paymentId}</title>
+          <title>Payment Receipt - ${payment.paymentCode}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
             .header { text-align: center; margin-bottom: 30px; }
@@ -44,7 +44,7 @@ export function PaymentsListPage() {
           <div class="details">
             <div class="detail-row">
               <span class="label">Payment ID:</span>
-              <span>${payment.paymentId}</span>
+              <span>${payment.paymentCode}</span>
             </div>
             ${payment.invoiceId ? `
             <div class="detail-row">
@@ -54,12 +54,12 @@ export function PaymentsListPage() {
             ` : ""}
             <div class="detail-row">
               <span class="label">Amount:</span>
-              <span>${payment.currency} ${payment.amount.toFixed(2)}</span>
+              <span>${payment.currencyCode || ""} ${payment.amount.toFixed(2)}</span>
             </div>
-            ${payment.paidAt ? `
+            ${payment.transactionDate ? `
             <div class="detail-row">
               <span class="label">Payment Date:</span>
-              <span>${payment.paidAt}</span>
+              <span>${payment.transactionDate}</span>
             </div>
             ` : ""}
             <div class="detail-row">
@@ -70,10 +70,10 @@ export function PaymentsListPage() {
               <span class="label">Status:</span>
               <span>${payment.status}</span>
             </div>
-            ${payment.providerTransactionId ? `
+            ${payment.paymentGatewayRef ? `
             <div class="detail-row">
               <span class="label">Transaction ID:</span>
-              <span>${payment.providerTransactionId}</span>
+              <span>${payment.paymentGatewayRef}</span>
             </div>
             ` : ""}
             ${payment.paymentReference ? `
@@ -101,13 +101,13 @@ export function PaymentsListPage() {
 
   const handleDownloadPayment = (payment: Payment) => {
     // Create downloadable content
-    let content = `Payment Receipt\n\nPayment ID: ${payment.paymentId}\n`
+    let content = `Payment Receipt\n\nPayment ID: ${payment.paymentCode}\n`
     if (payment.invoiceId) content += `Invoice ID: ${payment.invoiceId}\n`
-    content += `Amount: ${payment.currency} ${payment.amount.toFixed(2)}\n`
-    if (payment.paidAt) content += `Payment Date: ${payment.paidAt}\n`
+    content += `Amount: ${payment.currencyCode || ""} ${payment.amount.toFixed(2)}\n`
+    if (payment.transactionDate) content += `Payment Date: ${payment.transactionDate}\n`
     content += `Payment Method: ${payment.paymentMethod}\n`
     content += `Status: ${payment.status}\n`
-    if (payment.providerTransactionId) content += `Transaction ID: ${payment.providerTransactionId}\n`
+    if (payment.paymentGatewayRef) content += `Transaction ID: ${payment.paymentGatewayRef}\n`
     if (payment.paymentReference) content += `Payment Reference: ${payment.paymentReference}\n`
     content += `\nGenerated on ${new Date().toLocaleString()}`
     
@@ -115,7 +115,7 @@ export function PaymentsListPage() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
-    link.download = `payment-${payment.paymentId}.txt`
+    link.download = `payment-${payment.paymentCode}.txt`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -124,7 +124,7 @@ export function PaymentsListPage() {
 
   const columns: ColumnDef<Payment>[] = [
     {
-      accessorKey: "paymentId",
+      accessorKey: "paymentCode",
       header: "Payment ID",
     },
     {
@@ -133,7 +133,7 @@ export function PaymentsListPage() {
       cell: ({ row }) => {
         const payment = row.original
         const tenant = tenants.find((t) => t.id === payment.tenantId)
-        return tenant ? tenant.tenantName : "-"
+        return tenant ? tenant.shopNameEn : "-"
       },
     },
     {
@@ -145,15 +145,16 @@ export function PaymentsListPage() {
       header: "Amount",
       cell: ({ row }) => {
         const payment = row.original
-        return `${payment.currency} ${payment.amount.toFixed(2)}`
+        const currency = payment.currencyCode || ""
+        return `${currency} ${payment.amount.toFixed(2)}`.trim()
       },
     },
     {
-      accessorKey: "paidAt",
+      accessorKey: "transactionDate",
       header: "Payment Date",
       cell: ({ row }) => {
         const payment = row.original
-        return payment.paidAt || "-"
+        return payment.transactionDate || "-"
       },
     },
     {

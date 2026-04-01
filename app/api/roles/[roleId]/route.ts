@@ -10,7 +10,7 @@ export async function GET(
   const auth = requirePermission(PERMISSIONS.ROLES.VIEW)
   if (!auth.ok) return auth.response
 
-  const role = getRole(params.roleId)
+  const role = await getRole(params.roleId)
   if (!role) return jsonError(404, "NOT_FOUND", "Role not found")
   return jsonOk(role)
 }
@@ -29,7 +29,7 @@ export async function PATCH(
     return jsonError(400, "BAD_REQUEST", "Invalid JSON body")
   }
 
-  const updated = updateRole(params.roleId, updates)
+  const updated = await updateRole(params.roleId, updates)
   if (!updated) return jsonError(404, "NOT_FOUND", "Role not found")
   return jsonOk(updated)
 }
@@ -41,7 +41,7 @@ export async function DELETE(
   const auth = requirePermission(PERMISSIONS.ROLES.DELETE)
   if (!auth.ok) return auth.response
 
-  const ok = deleteRole(params.roleId)
+  const ok = await deleteRole(params.roleId)
   if (!ok) return jsonError(404, "NOT_FOUND", "Role not found")
   return jsonOk({ ok: true })
 }

@@ -1,3 +1,14 @@
+// NOTE: Currency Lookup currently uses a lightweight in-app reference model
+// (seeded via `lib/seed.ts`) rather than the MySQL `currencies` table.
+export interface CurrencyRate {
+  id: string
+  currencyCode: string
+  currencyName: string
+  exchangeRate: number
+  lastUpdated?: string
+}
+
+// Future (MySQL-backed) model placeholder.
 export interface Currency {
   id: string
   code: string
@@ -6,7 +17,6 @@ export interface Currency {
   exchangeRate: number
   isActive: boolean
   lastUpdated?: string
-  // System audit fields (read-only, auto-managed)
   createdAt: string
   createdBy?: string
   updatedAt: string

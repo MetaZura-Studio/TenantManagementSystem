@@ -197,7 +197,7 @@ export function CreateSubscriptionPage() {
                         <SelectContent>
                           {tenants.map((tenant) => (
                             <SelectItem key={tenant.id} value={tenant.id}>
-                              {tenant.tenantName}
+                              {tenant.shopNameEn || tenant.tenantCode || tenant.id}
                             </SelectItem>
                           ))}
                         </SelectContent>

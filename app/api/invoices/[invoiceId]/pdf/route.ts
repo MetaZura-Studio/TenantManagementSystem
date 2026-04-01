@@ -10,13 +10,16 @@ export async function GET(
   const auth = requirePermission(PERMISSIONS.INVOICES.VIEW)
   if (!auth.ok) return auth.response
 
-  const inv = getInvoice(params.invoiceId)
+  const inv = await getInvoice(params.invoiceId)
   if (!inv) return jsonError(404, "NOT_FOUND", "Invoice not found")
 
-  const lines = listInvoiceLinesByInvoiceId(params.invoiceId)
+  const lines = await listInvoiceLinesByInvoiceId(params.invoiceId)
   const bytes = generateInvoicePdfBytes({ invoice: inv, lines, title: "Invoice PDF Export" })
 
-  return new Response(bytes, {
+  // Convert to Buffer for a valid BodyInit across runtimes.
+  const body = Buffer.from(bytes)
+
+  return new Response(body, {
     status: 200,
     headers: {
       "content-type": "application/pdf",

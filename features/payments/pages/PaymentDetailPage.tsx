@@ -65,7 +65,7 @@ export function PaymentDetailPage({ paymentId }: PaymentDetailPageProps) {
     <>
       <PageHeader
         title="Payment Details"
-        subtitle={payment.paymentId}
+        subtitle={payment.paymentCode}
         breadcrumbs={[
           { label: "Payments", href: "/payments" },
           { label: "Payment Details" },
@@ -87,7 +87,7 @@ export function PaymentDetailPage({ paymentId }: PaymentDetailPageProps) {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <p className="text-sm text-muted-foreground">Payment ID</p>
-                <p className="text-lg font-medium">{payment.paymentId}</p>
+                <p className="text-lg font-medium">{payment.paymentCode}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
@@ -96,23 +96,23 @@ export function PaymentDetailPage({ paymentId }: PaymentDetailPageProps) {
               <div>
                 <p className="text-sm text-muted-foreground">Amount</p>
                 <p className="text-lg font-medium">
-                  {payment.currency} {payment.amount.toFixed(2)}
+                  {payment.currencyCode || ""} {payment.amount.toFixed(2)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Payment Method</p>
                 <p className="text-lg font-medium">{payment.paymentMethod}</p>
               </div>
-              {payment.paidAt && (
+              {payment.transactionDate && (
                 <div>
                   <p className="text-sm text-muted-foreground">Paid At</p>
-                  <p className="text-lg font-medium">{payment.paidAt}</p>
+                  <p className="text-lg font-medium">{payment.transactionDate}</p>
                 </div>
               )}
-              {payment.provider && (
+              {payment.paymentGatewayRef && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Provider</p>
-                  <p className="text-lg font-medium">{payment.provider}</p>
+                  <p className="text-sm text-muted-foreground">Transaction ID</p>
+                  <p className="text-lg font-medium">{payment.paymentGatewayRef}</p>
                 </div>
               )}
             </div>
@@ -132,12 +132,10 @@ export function PaymentDetailPage({ paymentId }: PaymentDetailPageProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Paid">Paid</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Failed">Failed</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                    <SelectItem value="PARTIALLY_PAID">Partially Paid</SelectItem>
-                    <SelectItem value="ISSUED">Issued</SelectItem>
+                    <SelectItem value="SUCCESS">SUCCESS</SelectItem>
+                    <SelectItem value="PENDING">PENDING</SelectItem>
+                    <SelectItem value="FAILED">FAILED</SelectItem>
+                    <SelectItem value="REFUNDED">REFUNDED</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

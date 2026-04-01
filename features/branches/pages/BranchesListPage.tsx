@@ -48,13 +48,13 @@ export function BranchesListPage() {
   }, [tenantIdFromUrl])
 
   const filteredBranches = branches.filter((branch) => {
-    if (filters.branchName && !branch.branchName.toLowerCase().includes(filters.branchName.toLowerCase())) {
+    if (filters.branchName && !branch.nameEn.toLowerCase().includes(filters.branchName.toLowerCase())) {
       return false
     }
     if (filters.tenantId !== "All" && branch.tenantId !== filters.tenantId) {
       return false
     }
-    if (filters.status !== "All" && branch.branchStatus !== filters.status) {
+    if (filters.status !== "All" && branch.status !== filters.status) {
       return false
     }
     return true
@@ -88,7 +88,7 @@ export function BranchesListPage() {
 
   const columns: ColumnDef<Branch>[] = [
     {
-      accessorKey: "branchName",
+      accessorKey: "nameEn",
       header: "Branch Name",
     },
     {
@@ -96,25 +96,26 @@ export function BranchesListPage() {
       header: "Tenant",
       cell: ({ row }) => {
         const tenant = tenants.find((t) => t.id === row.original.tenantId)
-        return tenant?.tenantName || row.original.tenantId
+        return tenant?.shopNameEn || row.original.tenantId
       },
     },
     {
-      accessorKey: "phoneNumber",
+      accessorKey: "phone",
       header: "Phone",
     },
     {
-      accessorKey: "email",
-      header: "Email",
+      accessorKey: "contactName",
+      header: "Contact",
+      cell: ({ row }) => row.original.contactName ?? "-",
     },
     {
       accessorKey: "city",
       header: "City",
     },
     {
-      accessorKey: "branchStatus",
+      accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.branchStatus} />,
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
     {
       id: "actions",
@@ -182,7 +183,7 @@ export function BranchesListPage() {
                   <SelectItem value="All">All Tenants</SelectItem>
                   {tenants.map((tenant) => (
                     <SelectItem key={tenant.id} value={tenant.id}>
-                      {tenant.tenantName}
+                      {tenant.shopNameEn || tenant.tenantCode || tenant.id}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -199,8 +200,8 @@ export function BranchesListPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -6,7 +6,8 @@ export const userStatusEnum = z.enum(["ACTIVE", "INACTIVE", "LOCKED"]);
 // Base schema (form fields)
 export const baseUserSchema = z.object({
   tenantId: z.string().min(1, "Tenant is required"),
-  branchId: z.string().min(1, "Branch is required"),
+  // Branch is optional: if a tenant has no branches, treat it as the tenant's main branch.
+  branchId: z.string().optional(),
   roleId: z.string().min(1, "Role is required"),
   fullNameEn: z.string().min(1, "Full name (English) is required"),
   fullNameAr: z.string().min(1, "Full name (Arabic) is required"),

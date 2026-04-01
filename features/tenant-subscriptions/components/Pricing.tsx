@@ -130,7 +130,6 @@ export function Pricing({
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
                         }}
-                        formatter={(value) => (currency === "USD" ? `$${value}` : `${value} ${currency}`)}
                         transformTiming={{ duration: 450, easing: "ease-out" }}
                         willChange
                         className="font-variant-numeric: tabular-nums"

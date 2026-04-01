@@ -15,7 +15,7 @@ export async function PATCH(
   const auth = requirePermission(PERMISSIONS.INVOICES.UPDATE)
   if (!auth.ok) return auth.response
 
-  const inv = getInvoice(params.invoiceId)
+  const inv = await getInvoice(params.invoiceId)
   if (!inv) return jsonError(404, "NOT_FOUND", "Invoice not found")
 
   let updates: Partial<InvoiceLine>
@@ -25,7 +25,7 @@ export async function PATCH(
     return jsonError(400, "BAD_REQUEST", "Invalid JSON body")
   }
 
-  const updated = updateInvoiceLine(params.lineId, updates)
+  const updated = await updateInvoiceLine(params.lineId, updates)
   if (!updated) return jsonError(404, "NOT_FOUND", "Invoice line not found")
   if (updated.invoiceId !== params.invoiceId) {
     return jsonError(400, "BAD_REQUEST", "Invoice line does not belong to this invoice")
@@ -41,15 +41,15 @@ export async function DELETE(
   const auth = requirePermission(PERMISSIONS.INVOICES.UPDATE)
   if (!auth.ok) return auth.response
 
-  const inv = getInvoice(params.invoiceId)
+  const inv = await getInvoice(params.invoiceId)
   if (!inv) return jsonError(404, "NOT_FOUND", "Invoice not found")
 
   // Verify association (best-effort).
-  const lines = listInvoiceLinesByInvoiceId(params.invoiceId)
+  const lines = await listInvoiceLinesByInvoiceId(params.invoiceId)
   const belongs = lines.some((l) => l.id === params.lineId)
   if (!belongs) return jsonError(404, "NOT_FOUND", "Invoice line not found")
 
-  const ok = deleteInvoiceLine(params.lineId)
+  const ok = await deleteInvoiceLine(params.lineId)
   if (!ok) return jsonError(404, "NOT_FOUND", "Invoice line not found")
   return jsonOk({ ok: true })
 }

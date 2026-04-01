@@ -33,6 +33,7 @@ import type { User } from "../types"
 import { z } from "zod"
 
 const formSchema = userSchema.omit({ status: true })
+const MAIN_BRANCH_VALUE = "__MAIN__"
 
 export function CreateUserPage() {
   const router = useRouter()
@@ -66,16 +67,18 @@ export function CreateUserPage() {
     : []
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    const userData: Omit<User, "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy" | "passwordHash"> = {
+    const userData: Omit<User, "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy"> & {
+      password: string
+    } = {
       tenantId: data.tenantId,
-      branchId: data.branchId,
+      branchId: data.branchId === MAIN_BRANCH_VALUE ? undefined : (data.branchId || undefined),
       roleId: data.roleId,
       fullNameEn: data.fullNameEn,
       fullNameAr: data.fullNameAr,
       username: data.username,
       email: data.email,
       mobile: data.mobile,
-      passwordHash: "", // Will be hashed by backend
+      password: data.password || "",
       status: "ACTIVE", // Default to ACTIVE for new users
       address: data.address,
       zipCode: data.zipCode,
@@ -164,6 +167,9 @@ export function CreateUserPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value={MAIN_BRANCH_VALUE}>
+                            Main branch (no specific branch)
+                          </SelectItem>
                           {availableBranches.map((branch) => (
                             <SelectItem key={branch.id} value={branch.id}>
                               {branch.nameEn}
@@ -171,6 +177,11 @@ export function CreateUserPage() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {selectedTenantId && availableBranches.length === 0 && (
+                        <FormDescription>
+                          This tenant has no branches yet. Select “Main branch” to continue.
+                        </FormDescription>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}

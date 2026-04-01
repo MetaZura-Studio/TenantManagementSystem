@@ -7,7 +7,16 @@ import type { InvoiceStatus } from "@/features/invoices/types"
 import type { PlanStatus } from "@/features/plans/types"
 
 interface StatusBadgeProps {
-  status: TenantStatus | SubscriptionStatus | UserStatus | PaymentStatus | InvoiceStatus | PlanStatus | string
+  status:
+    | TenantStatus
+    | SubscriptionStatus
+    | UserStatus
+    | PaymentStatus
+    | InvoiceStatus
+    | PlanStatus
+    | string
+    | null
+    | undefined
   variant?: "default" | "success" | "warning" | "destructive" | "secondary"
   className?: string
 }
@@ -16,7 +25,8 @@ export function StatusBadge({ status, variant, className }: StatusBadgeProps) {
   const getVariant = () => {
     if (variant) return variant
     
-    const statusLower = status.toLowerCase()
+    const statusLower = String(status ?? "").toLowerCase()
+    if (!statusLower) return "secondary"
     if (statusLower === "active" || statusLower === "paid" || statusLower === "completed") {
       return "success"
     }
@@ -37,7 +47,7 @@ export function StatusBadge({ status, variant, className }: StatusBadgeProps) {
         className
       )}
     >
-      {status}
+      {status ?? "—"}
     </Badge>
   )
 }

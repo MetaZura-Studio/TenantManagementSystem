@@ -6,7 +6,7 @@ import { createPayment, listPayments } from "./_store"
 export async function GET() {
   const auth = requirePermission(PERMISSIONS.PAYMENTS.VIEW)
   if (!auth.ok) return auth.response
-  return jsonOk(listPayments())
+  return jsonOk(await listPayments())
 }
 
 export async function POST(req: Request) {
@@ -24,8 +24,8 @@ export async function POST(req: Request) {
     return jsonError(400, "BAD_REQUEST", "Missing required payment fields")
   }
 
-  const created = createPayment(body)
-  if ("error" in created) {
+  const created = await createPayment(body)
+  if (created && typeof created === "object" && "error" in created) {
     return jsonError(404, "NOT_FOUND", "Invoice not found")
   }
   return jsonOk(created, { status: 201 })

@@ -206,7 +206,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                         <SelectContent>
                           {tenants.map((tenant) => (
                             <SelectItem key={tenant.id} value={tenant.id}>
-                              {tenant.tenantName}
+                              {tenant.shopNameEn}
                             </SelectItem>
                           ))}
                         </SelectContent>

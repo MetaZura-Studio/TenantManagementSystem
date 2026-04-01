@@ -1,86 +1,52 @@
-import { useStore } from "../store";
 import type {
-  CreateUserPayload,
-  UpdateUserPayload,
   User,
 } from "@/features/users/types";
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const generateUserId = () => `user-${Date.now()}`;
-
 export const usersApi = {
   getAll: async (): Promise<User[]> => {
-    await delay(300);
-    return useStore.getState().users;
+    const res = await fetch("/api/users", { method: "GET" })
+    const data = await res.json().catch(() => null)
+    if (!res.ok) throw new Error((data as any)?.error?.message || `Request failed (${res.status})`)
+    return data as User[]
   },
 
   getById: async (id: string): Promise<User | undefined> => {
-    await delay(200);
-    return useStore.getState().users.find((user) => user.id === id);
-  },
-
-  create: async (payload: CreateUserPayload): Promise<User> => {
-    await delay(400);
-
-    const now = new Date().toISOString();
-
-    const newUser: User = {
-      id: generateUserId(),
-      ...payload,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    useStore.getState().addUser(newUser);
-    return newUser;
-  },
-
-  update: async (payload: UpdateUserPayload): Promise<User> => {
-    await delay(400);
-
-    const { id, ...updates } = payload;
-    const existingUser = useStore
-      .getState()
-      .users.find((user) => user.id === id);
-
-    if (!existingUser) {
-      throw new Error("User not found");
+    const res = await fetch(`/api/users/${encodeURIComponent(id)}`, { method: "GET" })
+    const data = await res.json().catch(() => null)
+    if (!res.ok) {
+      const msg = (data as any)?.error?.message || `Request failed (${res.status})`
+      if (res.status === 404) return undefined
+      throw new Error(msg)
     }
-
-    const updatedUser: User = {
-      ...existingUser,
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-
-    useStore.getState().updateUser(id, updatedUser);
-    return updatedUser;
+    return data as User
   },
 
-  activate: async (id: string): Promise<User> => {
-    return usersApi.update({
-      id,
-      status: "ACTIVE",
-    });
+  create: async (payload: any): Promise<User> => {
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json().catch(() => null)
+    if (!res.ok) throw new Error((data as any)?.error?.message || `Request failed (${res.status})`)
+    return data as User
   },
 
-  deactivate: async (id: string): Promise<User> => {
-    return usersApi.update({
-      id,
-      status: "INACTIVE",
-    });
-  },
-
-  lock: async (id: string): Promise<User> => {
-    return usersApi.update({
-      id,
-      status: "LOCKED",
-    });
+  update: async (payload: any): Promise<User> => {
+    const { id, ...updates } = payload
+    const res = await fetch(`/api/users/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(updates),
+    })
+    const data = await res.json().catch(() => null)
+    if (!res.ok) throw new Error((data as any)?.error?.message || `Request failed (${res.status})`)
+    return data as User
   },
 
   delete: async (id: string): Promise<void> => {
-    await delay(300);
-    useStore.getState().deleteUser(id);
+    const res = await fetch(`/api/users/${encodeURIComponent(id)}`, { method: "DELETE" })
+    const data = await res.json().catch(() => null)
+    if (!res.ok) throw new Error((data as any)?.error?.message || `Request failed (${res.status})`)
   },
 };

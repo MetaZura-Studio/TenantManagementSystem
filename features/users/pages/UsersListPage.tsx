@@ -63,12 +63,12 @@ export function UsersListPage() {
       header: "Email",
     },
     {
-      accessorKey: "firstName",
-      header: "First Name",
+      accessorKey: "fullNameEn",
+      header: "Full Name (EN)",
     },
     {
-      accessorKey: "lastName",
-      header: "Last Name",
+      accessorKey: "fullNameAr",
+      header: "Full Name (AR)",
     },
     {
       id: "tenant",
@@ -76,7 +76,7 @@ export function UsersListPage() {
       cell: ({ row }) => {
         const user = row.original
         const tenant = tenants.find((t) => t.id === user.tenantId)
-        return tenant ? tenant.tenantName : "-"
+        return tenant ? tenant.shopNameEn : "-"
       },
     },
     {
@@ -84,9 +84,9 @@ export function UsersListPage() {
       header: "Branch",
       cell: ({ row }) => {
         const user = row.original
-        if (!user.branchId) return "-"
+        if (!user.branchId) return "Main branch"
         const branch = branches.find((b) => b.id === user.branchId)
-        return branch ? branch.branchName : "-"
+        return branch ? branch.nameEn : "-"
       },
     },
     {

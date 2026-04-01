@@ -13,7 +13,7 @@ export async function POST(
   const auth = requirePermission(PERMISSIONS.INVOICES.UPDATE)
   if (!auth.ok) return auth.response
 
-  const inv = getInvoice(params.invoiceId)
+  const inv = await getInvoice(params.invoiceId)
   if (!inv) return jsonError(404, "NOT_FOUND", "Invoice not found")
 
   let body: SendBody
@@ -28,7 +28,7 @@ export async function POST(
     return jsonError(400, "BAD_REQUEST", "Invalid send method")
   }
 
-  const updated = markInvoiceSent({ invoiceId: params.invoiceId, method })
+  const updated = await markInvoiceSent({ invoiceId: params.invoiceId, method })
   if (!updated) return jsonError(404, "NOT_FOUND", "Invoice not found")
 
   return jsonOk({

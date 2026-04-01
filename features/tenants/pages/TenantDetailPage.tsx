@@ -72,37 +72,31 @@ export function TenantDetailPage({ tenantId }: TenantDetailPageProps) {
 
   const branchColumns: ColumnDef<Branch>[] = [
     {
-      accessorKey: "branchName",
+      accessorKey: "nameEn",
       header: "Branch Name",
     },
     {
-      id: "address",
+      accessorKey: "address",
       header: "Address",
       cell: ({ row }) => {
         const b = row.original
-        const parts = [
-          b.addressLine1,
-          b.addressLine2,
-          b.city,
-          b.stateProvince,
-          b.zipPostalCode,
-        ].filter(Boolean)
+        const parts = [b.address, b.city, b.state, b.zipCode, b.country].filter(Boolean)
         return parts.join(", ")
       },
     },
     {
-      accessorKey: "contactPerson",
+      accessorKey: "contactName",
       header: "Contact Person",
-      cell: ({ row }) => row.original.contactPerson ?? "-",
+      cell: ({ row }) => row.original.contactName ?? "-",
     },
     {
-      accessorKey: "phoneNumber",
+      accessorKey: "phone",
       header: "Contact Number",
     },
     {
-      accessorKey: "branchStatus",
+      accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.branchStatus} />,
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
     {
       id: "actions",
@@ -139,7 +133,7 @@ export function TenantDetailPage({ tenantId }: TenantDetailPageProps) {
     {
       id: "planName",
       header: "Plan Name",
-      cell: ({ row }) => plans.find((p) => p.id === row.original.planId)?.planName ?? row.original.planId,
+      cell: ({ row }) => plans.find((p) => p.id === row.original.planId)?.nameEn ?? row.original.planId,
     },
     {
       accessorKey: "startDate",
@@ -189,7 +183,7 @@ export function TenantDetailPage({ tenantId }: TenantDetailPageProps) {
     <>
       <PageHeader
         title="Tenant Details"
-        subtitle={tenant.tenantName}
+        subtitle={tenant.shopNameEn}
         breadcrumbs={[
           { label: "Tenant Management", href: "/tenants" },
           { label: "Tenants List", href: "/tenants" },
@@ -220,25 +214,29 @@ export function TenantDetailPage({ tenantId }: TenantDetailPageProps) {
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-muted-foreground">Tenant Name</p>
-                <p className="text-lg font-medium">{tenant.tenantName}</p>
+                <p className="text-lg font-medium">{tenant.shopNameEn}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Tenant ID</p>
-                <p className="text-lg font-medium">{tenant.tenantId}</p>
+                <p className="text-lg font-medium">{tenant.tenantCode}</p>
               </div>
             </div>
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
-                <StatusBadge status={tenant.status} />
+                <StatusBadge status={tenant.subscriptionStatus} />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Contact Email</p>
-                <p className="text-lg font-medium">{tenant.email}</p>
+                <p className="text-lg font-medium">{tenant.ownerEmail}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Contact Person</p>
+                <p className="text-lg font-medium">{tenant.contactPerson || "—"}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Phone</p>
-                <p className="text-lg font-medium">{tenant.phone}</p>
+                <p className="text-lg font-medium">{tenant.ownerMobile}</p>
               </div>
             </div>
           </div>

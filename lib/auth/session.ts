@@ -28,27 +28,14 @@ export function getSession(): Session {
   try {
     const raw = window.localStorage.getItem(CLIENT_SESSION_KEY)
     if (!raw) {
-      // Keep legacy behavior permissive for UI until all screens adopt async session.
       return {
-        user: {
-          id: "admin-1",
-          name: "Admin User",
-          email: "admin@example.com",
-          role: "admin",
-          permissions: ["*"],
-        },
+        user: { id: "anonymous", name: "Anonymous", email: "", role: "anonymous" },
       }
     }
     return JSON.parse(raw) as Session
   } catch {
     return {
-      user: {
-        id: "admin-1",
-        name: "Admin User",
-        email: "admin@example.com",
-        role: "admin",
-        permissions: ["*"],
-      },
+      user: { id: "anonymous", name: "Anonymous", email: "", role: "anonymous" },
     }
   }
 }

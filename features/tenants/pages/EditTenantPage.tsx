@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -28,9 +29,7 @@ import { useTenant, useUpdateTenant } from "../hooks"
 import { tenantSchema } from "../schemas"
 import { z } from "zod"
 
-const formSchema = tenantSchema.extend({
-  tenantId: z.string().min(1, "Tenant ID is required"),
-})
+const formSchema = tenantSchema
 
 interface EditTenantPageProps {
   tenantId: string
@@ -43,27 +42,53 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    values: tenant
-      ? {
-          tenantId: tenant.tenantId,
-          tenantName: tenant.tenantName,
-          contactPerson: tenant.contactPerson,
-          email: tenant.email,
-          phone: tenant.phone,
-          address: tenant.address,
-          city: tenant.city,
-          state: tenant.state,
-          zipCode: tenant.zipCode,
-          country: tenant.country,
-          status: tenant.status,
-          ownerName: tenant.ownerName,
-          ownerEmail: tenant.ownerEmail,
-          ownerPhone: tenant.ownerPhone,
-          ownerType: tenant.ownerType,
-          remarks: tenant.remarks,
-        }
-      : undefined,
+    defaultValues: {
+      tenantCode: "",
+      slug: "",
+      shopNameEn: "",
+      shopNameAr: "",
+      ownerName: "",
+      ownerEmail: "",
+      ownerMobile: "",
+      tenantType: "Individual",
+      contactPerson: "",
+      address: "",
+      city: "",
+      zipCode: "",
+      country: "",
+      timezone: "UTC",
+      subscriptionStatus: "TRIAL",
+      subscriptionStartDate: "",
+      subscriptionEndDate: "",
+      lockedAt: "",
+      suspensionReason: "",
+    },
   })
+
+  useEffect(() => {
+    if (!tenant) return
+    form.reset({
+      tenantCode: tenant.tenantCode,
+      slug: tenant.slug,
+      shopNameEn: tenant.shopNameEn,
+      shopNameAr: tenant.shopNameAr,
+      ownerName: tenant.ownerName,
+      ownerEmail: tenant.ownerEmail,
+      ownerMobile: tenant.ownerMobile,
+      tenantType: tenant.tenantType,
+      contactPerson: tenant.contactPerson,
+      address: tenant.address,
+      city: tenant.city,
+      zipCode: tenant.zipCode,
+      country: tenant.country,
+      timezone: tenant.timezone,
+      subscriptionStatus: tenant.subscriptionStatus,
+      subscriptionStartDate: tenant.subscriptionStartDate ?? "",
+      subscriptionEndDate: tenant.subscriptionEndDate ?? "",
+      lockedAt: tenant.lockedAt ?? "",
+      suspensionReason: tenant.suspensionReason ?? "",
+    })
+  }, [tenant, form])
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     updateMutation.mutate(
@@ -99,7 +124,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
     <>
       <PageHeader
         title="Edit Tenant"
-        subtitle={tenant.tenantName}
+        subtitle={tenant.shopNameEn}
         breadcrumbs={[
           { label: "Tenant Management", href: "/tenants" },
           { label: "Tenants List", href: "/tenants" },
@@ -117,13 +142,105 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:gap-8">
                 <FormField
                   control={form.control}
-                  name="tenantName"
+                  name="tenantCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tenant Name</FormLabel>
+                      <FormLabel>Tenant Code</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter tenant name" {...field} />
+                        <Input placeholder="Enter tenant code" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="shopNameEn"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Shop Name (EN)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter shop name (English)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="shopNameAr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Shop Name (AR)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter shop name (Arabic)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="ownerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Owner Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter owner name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="ownerEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Owner Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="Enter owner email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="ownerMobile"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Owner Mobile</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter owner mobile" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="tenantType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tenant Type</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select tenant type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Individual">Individual</SelectItem>
+                          <SelectItem value="Company">Company</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -134,37 +251,8 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="contactPerson"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Person</FormLabel>
                       <FormControl>
                         <Input placeholder="Enter contact person" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="Enter email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter phone" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -190,23 +278,8 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City</FormLabel>
                       <FormControl>
                         <Input placeholder="Enter city" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>State</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter state" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -243,21 +316,80 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
 
                 <FormField
                   control={form.control}
-                  name="status"
+                  name="timezone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <FormLabel>Timezone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter timezone" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="subscriptionStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subscription Status</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
+                            <SelectValue placeholder="Select subscription status" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Inactive">Inactive</SelectItem>
+                          <SelectItem value="TRIAL">Trial</SelectItem>
+                          <SelectItem value="ACTIVE">Active</SelectItem>
+                          <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                          <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                          <SelectItem value="EXPIRED">Expired</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="subscriptionStartDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subscription Start Date</FormLabel>
+                      <FormControl>
+                        <Input placeholder="YYYY-MM-DD" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="subscriptionEndDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subscription End Date</FormLabel>
+                      <FormControl>
+                        <Input placeholder="YYYY-MM-DD" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="suspensionReason"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Suspension Reason</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Enter suspension reason (optional)" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

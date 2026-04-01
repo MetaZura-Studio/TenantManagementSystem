@@ -52,8 +52,8 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
           planId: subscription.planId,
           status: subscription.status,
           startDate: subscription.startDate,
-          currentPeriodStart: subscription.currentPeriodStart,
-          currentPeriodEnd: subscription.currentPeriodEnd,
+          currentPeriodStart: subscription.currentPeriodStart || subscription.startDate,
+          currentPeriodEnd: subscription.currentPeriodEnd || subscription.startDate,
           canceledAt: subscription.canceledAt,
           trialStart: subscription.trialStart,
           trialEnd: subscription.trialEnd,
@@ -133,7 +133,7 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                         <SelectContent>
                           {tenants.map((tenant) => (
                             <SelectItem key={tenant.id} value={tenant.id}>
-                              {tenant.tenantName}
+                              {tenant.shopNameEn || tenant.tenantCode || tenant.id}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -158,7 +158,7 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                         <SelectContent>
                           {plans.map((plan) => (
                             <SelectItem key={plan.id} value={plan.id}>
-                              {plan.planName}
+                              {plan.nameEn || plan.planCode || plan.id}
                             </SelectItem>
                           ))}
                         </SelectContent>

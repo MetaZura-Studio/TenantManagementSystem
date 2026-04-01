@@ -1,6 +1,7 @@
 "use client"
 
 import { Search, Bell, User } from "lucide-react"
+import { useRouter } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,8 +12,16 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { logout } from "@/lib/auth/session"
 
 export function Topbar() {
+  const router = useRouter()
+
+  async function onLogout() {
+    await logout()
+    router.replace("/login")
+  }
+
   return (
     <div className="flex h-16 items-center justify-between border-b border-border/40 bg-background/80 backdrop-blur-xl px-6">
       <div className="flex-1"></div>
@@ -57,7 +66,7 @@ export function Topbar() {
             <DropdownMenuItem className="rounded-lg">Profile</DropdownMenuItem>
             <DropdownMenuItem className="rounded-lg">Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="rounded-lg text-destructive">
+            <DropdownMenuItem className="rounded-lg text-destructive" onClick={onLogout}>
               Logout
             </DropdownMenuItem>
           </DropdownMenuContent>

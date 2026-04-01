@@ -1,4 +1,5 @@
 export type BillingCycle = "Monthly" | "Yearly"
+export type PlanStatus = "Active" | "Inactive"
 
 export interface Plan {
   id: string

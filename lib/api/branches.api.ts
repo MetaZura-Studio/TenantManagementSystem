@@ -1,41 +1,48 @@
-import { useStore } from "../store"
 import type { Branch } from "@/features/branches/types"
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+async function parseOrThrow(res: Response) {
+  const data = await res.json().catch(() => null)
+  if (res.ok) return data
+  const msg =
+    (data as any)?.error?.message ||
+    (data as any)?.message ||
+    `Request failed (${res.status})`
+  throw new Error(msg)
+}
 
 export const branchesApi = {
   getAll: async (): Promise<Branch[]> => {
-    await delay(300)
-    return useStore.getState().branches
+    const res = await fetch("/api/branches", { method: "GET" })
+    return (await parseOrThrow(res)) as Branch[]
   },
   getById: async (id: string): Promise<Branch | undefined> => {
-    await delay(200)
-    return useStore.getState().branches.find((b) => b.id === id)
+    const res = await fetch(`/api/branches/${encodeURIComponent(id)}`, {
+      method: "GET",
+    })
+    return (await parseOrThrow(res)) as Branch
   },
   create: async (
-    branch: Omit<Branch, "id" | "createdAt" | "updatedAt"> & { branchStatus?: Branch["branchStatus"] }
+    branch: Omit<Branch, "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy">
   ): Promise<Branch> => {
-    await delay(400)
-    const newBranch: Branch = {
-      ...branch,
-      branchStatus: branch.branchStatus ?? "Active",
-      id: `branch-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-    useStore.getState().addBranch(newBranch)
-    return newBranch
+    const res = await fetch("/api/branches", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(branch),
+    })
+    return (await parseOrThrow(res)) as Branch
   },
   update: async (id: string, updates: Partial<Branch>): Promise<Branch> => {
-    await delay(400)
-    const branch = useStore.getState().branches.find((b) => b.id === id)
-    if (!branch) throw new Error("Branch not found")
-    const updated = { ...branch, ...updates, updatedAt: new Date().toISOString() }
-    useStore.getState().updateBranch(id, updated)
-    return updated
+    const res = await fetch(`/api/branches/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(updates),
+    })
+    return (await parseOrThrow(res)) as Branch
   },
   delete: async (id: string): Promise<void> => {
-    await delay(300)
-    useStore.getState().deleteBranch(id)
+    const res = await fetch(`/api/branches/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    })
+    await parseOrThrow(res)
   },
 }

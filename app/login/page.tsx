@@ -44,7 +44,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-      <Card className="w-full max-w-md">
+      <div className="w-full max-w-md space-y-4">
+        <div className="text-center">
+          <div className="text-2xl font-semibold tracking-tight">
+            Dishdasha Management System
+          </div>
+        </div>
+        <Card>
         <CardHeader>
           <CardTitle>Sign in</CardTitle>
         </CardHeader>
@@ -71,23 +77,10 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign in"}
             </Button>
-            <p className="text-xs text-muted-foreground">
-              Dev password defaults to admin123 (override via ADMIN_PASSWORD env var).
-            </p>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>Dev test emails:</p>
-              <ul className="list-disc pl-5">
-                <li>admin@example.com</li>
-                <li>viewer@example.com</li>
-                <li>tenant.manager@example.com</li>
-                <li>commercial.manager@example.com</li>
-                <li>user.manager@example.com</li>
-                <li>finance.manager@example.com</li>
-              </ul>
-            </div>
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

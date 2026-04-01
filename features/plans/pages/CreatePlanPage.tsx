@@ -122,19 +122,6 @@ export function CreatePlanPage() {
 
                 <FormField
                   control={form.control}
-                  name="planName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Plan Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter plan name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
                   name="nameEn"
                   render={({ field }) => (
                     <FormItem>
@@ -219,6 +206,7 @@ export function CreatePlanPage() {
                           type="number"
                           step="0.01"
                           placeholder="Enter monthly price"
+                          className="no-spinner"
                           {...field}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                         />
@@ -239,6 +227,7 @@ export function CreatePlanPage() {
                           type="number"
                           step="0.01"
                           placeholder="Enter yearly price"
+                          className="no-spinner"
                           {...field}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                         />
@@ -258,6 +247,7 @@ export function CreatePlanPage() {
                         <Input
                           type="number"
                           placeholder="Enter max branches"
+                          className="no-spinner"
                           {...field}
                           onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                         />
@@ -277,6 +267,7 @@ export function CreatePlanPage() {
                         <Input
                           type="number"
                           placeholder="Enter max users"
+                          className="no-spinner"
                           {...field}
                           onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                         />
