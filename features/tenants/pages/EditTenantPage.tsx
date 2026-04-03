@@ -20,6 +20,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormDescription,
   FormMessage,
 } from "@/components/ui/form"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
@@ -28,10 +29,10 @@ import { toast } from "@/components/shared/feedback/use-toast"
 import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { getCitiesByCountryName, getCountries } from "@/lib/geo/locations"
 import { useTenant, useUpdateTenant } from "../hooks"
-import { tenantSchema } from "../schemas"
+import { buildTenantSchema } from "../schemas"
 import { z } from "zod"
-
-const formSchema = tenantSchema
+import { useRequiredFieldsMatrix } from "@/features/settings/hooks"
+import { isRequired } from "@/lib/forms/required-fields"
 
 interface EditTenantPageProps {
   tenantId: string
@@ -41,6 +42,16 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
   const router = useRouter()
   const { data: tenant, isLoading } = useTenant(tenantId)
   const updateMutation = useUpdateTenant()
+  const { matrix } = useRequiredFieldsMatrix()
+  const req = (field: string) => isRequired(matrix, "tenants", field, true)
+
+  const formSchema = useMemo(
+    () =>
+      buildTenantSchema({
+        required: (field) => isRequired(matrix, "tenants", field, true),
+      }),
+    [matrix]
+  )
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,11 +70,13 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
       zipCode: "",
       country: "",
       timezone: "UTC",
+      invoicePrefix: "INV",
       subscriptionStatus: "TRIAL",
       subscriptionStartDate: "",
       subscriptionEndDate: "",
       lockedAt: "",
       suspensionReason: "",
+      logo: undefined,
     },
   })
 
@@ -91,17 +104,20 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
       zipCode: tenant.zipCode,
       country: tenant.country,
       timezone: tenant.timezone,
+      invoicePrefix: tenant.invoicePrefix || "INV",
       subscriptionStatus: tenant.subscriptionStatus,
       subscriptionStartDate: tenant.subscriptionStartDate ?? "",
       subscriptionEndDate: tenant.subscriptionEndDate ?? "",
       lockedAt: tenant.lockedAt ?? "",
       suspensionReason: tenant.suspensionReason ?? "",
+      logo: undefined,
     })
   }, [tenant, form])
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
+    const { logo, ...rest } = data
     updateMutation.mutate(
-      { id: tenantId, updates: data },
+      { id: tenantId, updates: rest, logoFile: logo ?? null },
       {
         onSuccess: () => {
           toast({
@@ -154,7 +170,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="tenantCode"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Tenant Code</RequiredLabel>
+                      <RequiredLabel required={req("tenantCode")}>Tenant Code</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter tenant code" {...field} />
                       </FormControl>
@@ -165,10 +181,25 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
 
                 <FormField
                   control={form.control}
+                  name="invoicePrefix"
+                  render={({ field }) => (
+                    <FormItem>
+                      <RequiredLabel required={req("invoicePrefix")}>Invoice Prefix</RequiredLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., ABC" {...field} />
+                      </FormControl>
+                      <FormDescription>Used when generating invoice codes.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="shopNameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Shop Name (EN)</RequiredLabel>
+                      <RequiredLabel required={req("shopNameEn")}>Shop Name (EN)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter shop name (English)" {...field} />
                       </FormControl>
@@ -182,7 +213,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="shopNameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Shop Name (AR)</RequiredLabel>
+                      <RequiredLabel required={req("shopNameAr")}>Shop Name (AR)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter shop name (Arabic)" {...field} />
                       </FormControl>
@@ -196,7 +227,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="ownerName"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Owner Name</RequiredLabel>
+                      <RequiredLabel required={req("ownerName")}>Owner Name</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter owner name" {...field} />
                       </FormControl>
@@ -210,7 +241,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="ownerEmail"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Owner Email</RequiredLabel>
+                      <RequiredLabel required={req("ownerEmail")}>Owner Email</RequiredLabel>
                       <FormControl>
                         <Input type="email" placeholder="Enter owner email" {...field} />
                       </FormControl>
@@ -224,7 +255,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="ownerMobile"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Owner Mobile</RequiredLabel>
+                      <RequiredLabel required={req("ownerMobile")}>Owner Mobile</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter owner mobile" {...field} />
                       </FormControl>
@@ -235,10 +266,43 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
 
                 <FormField
                   control={form.control}
+                  name="logo"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <RequiredLabel required={req("logo")}>Tenant Logo</RequiredLabel>
+                      <FormControl>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => field.onChange(e.target.files?.[0] ?? undefined)}
+                        />
+                      </FormControl>
+                      {tenant.logoUrl ? (
+                        <div className="mt-3 flex items-center gap-4">
+                          <img
+                            src={tenant.logoUrl}
+                            alt={`${tenant.shopNameEn} logo`}
+                            className="h-10 w-10 rounded-md border border-border/50 object-contain bg-white"
+                          />
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium">Current logo</div>
+                            <div className="text-xs text-muted-foreground">
+                              Upload a new image to replace it.
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="tenantType"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Tenant Type</RequiredLabel>
+                      <RequiredLabel required={req("tenantType")}>Tenant Type</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -260,7 +324,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="contactPerson"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Contact Person</RequiredLabel>
+                      <RequiredLabel required={req("contactPerson")}>Contact Person</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter contact person" {...field} />
                       </FormControl>
@@ -274,7 +338,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Address</RequiredLabel>
+                      <RequiredLabel required={req("address")}>Address</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter address" {...field} />
                       </FormControl>
@@ -288,7 +352,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Country</RequiredLabel>
+                      <RequiredLabel required={req("country")}>Country</RequiredLabel>
                       <Select
                         onValueChange={(value) => {
                           field.onChange(value)
@@ -321,7 +385,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="zipCode"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Zip Code</RequiredLabel>
+                      <RequiredLabel required={req("zipCode")}>Zip Code</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter zip code" {...field} />
                       </FormControl>
@@ -335,7 +399,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>City</RequiredLabel>
+                      <RequiredLabel required={req("city")}>City</RequiredLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value ?? ""}
@@ -371,7 +435,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="timezone"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Timezone</RequiredLabel>
+                      <RequiredLabel required={req("timezone")}>Timezone</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter timezone" {...field} />
                       </FormControl>
@@ -385,7 +449,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="subscriptionStatus"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Subscription Status</RequiredLabel>
+                      <RequiredLabel required={req("subscriptionStatus")}>Subscription Status</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -410,7 +474,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="subscriptionStartDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Subscription Start Date</FormLabel>
+                      <RequiredLabel required={req("subscriptionStartDate")}>Subscription Start Date</RequiredLabel>
                       <FormControl>
                         <Input placeholder="YYYY-MM-DD" {...field} />
                       </FormControl>
@@ -424,7 +488,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="subscriptionEndDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Subscription End Date</FormLabel>
+                      <RequiredLabel required={req("subscriptionEndDate")}>Subscription End Date</RequiredLabel>
                       <FormControl>
                         <Input placeholder="YYYY-MM-DD" {...field} />
                       </FormControl>
@@ -438,7 +502,7 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
                   name="suspensionReason"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Suspension Reason</FormLabel>
+                      <RequiredLabel required={req("suspensionReason")}>Suspension Reason</RequiredLabel>
                       <FormControl>
                         <Textarea placeholder="Enter suspension reason (optional)" {...field} />
                       </FormControl>

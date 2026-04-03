@@ -30,10 +30,12 @@ import { toast } from "@/components/shared/feedback/use-toast"
 import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { getCitiesByCountryName, getCountries } from "@/lib/geo/locations"
 import { useCreateTenant, useTenants } from "../hooks"
-import { tenantSchema } from "../schemas"
+import { buildTenantSchema } from "../schemas"
 import type { Tenant } from "../types"
 import { generateSlug, ensureUniqueSlug } from "@/lib/utils/slug"
 import { z } from "zod"
+import { useRequiredFieldsMatrix } from "@/features/settings/hooks"
+import { isRequired } from "@/lib/forms/required-fields"
 
 // Common timezones
 const TIMEZONES = [
@@ -53,13 +55,20 @@ const TIMEZONES = [
   "Australia/Sydney",
 ]
 
-// Form schema without slug (slug is auto-generated)
-const formSchema = tenantSchema.omit({ slug: true })
-
 export function CreateTenantPage() {
   const router = useRouter()
   const createMutation = useCreateTenant()
   const { data: existingTenants = [] } = useTenants()
+  const { matrix } = useRequiredFieldsMatrix()
+  const req = (field: string) => isRequired(matrix, "tenants", field, true)
+
+  const formSchema = useMemo(
+    () =>
+      buildTenantSchema({
+        required: (field) => isRequired(matrix, "tenants", field, true),
+      }).omit({ slug: true }),
+    [matrix]
+  )
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,6 +85,7 @@ export function CreateTenantPage() {
       city: "",
       zipCode: "",
       country: "",
+      invoicePrefix: "ABC",
       timezone: "UTC",
       subscriptionStatus: "TRIAL",
     },
@@ -108,12 +118,15 @@ export function CreateTenantPage() {
       city: data.city,
       zipCode: data.zipCode,
       country: data.country,
+      invoicePrefix: data.invoicePrefix,
       timezone: data.timezone,
       subscriptionStatus: data.subscriptionStatus,
       subscriptionStartDate: data.subscriptionStartDate,
       subscriptionEndDate: data.subscriptionEndDate,
     }
-    createMutation.mutate(tenantData, {
+    createMutation.mutate(
+      { tenant: tenantData, logoFile: data.logo ?? null },
+      {
       onSuccess: () => {
         toast({
           title: "Success",
@@ -128,7 +141,8 @@ export function CreateTenantPage() {
           variant: "destructive",
         })
       },
-    })
+      }
+    )
   }
 
   return (
@@ -155,7 +169,7 @@ export function CreateTenantPage() {
                 name="tenantType"
                 render={({ field }) => (
                   <FormItem>
-                    <RequiredLabel>Tenant Type</RequiredLabel>
+                    <RequiredLabel required={req("tenantType")}>Tenant Type</RequiredLabel>
                     <FormControl>
                       <RadioGroup
                         value={field.value}
@@ -184,11 +198,27 @@ export function CreateTenantPage() {
                   name="tenantCode"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Tenant Code</RequiredLabel>
+                      <RequiredLabel required={req("tenantCode")}>Tenant Code</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter tenant code" {...field} />
                       </FormControl>
                       <FormDescription>Unique business identifier</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Invoice Prefix */}
+                <FormField
+                  control={form.control}
+                  name="invoicePrefix"
+                  render={({ field }) => (
+                    <FormItem>
+                      <RequiredLabel required={req("invoicePrefix")}>Invoice Prefix</RequiredLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., ABC" {...field} />
+                      </FormControl>
+                      <FormDescription>Used as the prefix for generated invoice codes.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -206,7 +236,7 @@ export function CreateTenantPage() {
 
                     return (
                       <FormItem>
-                        <RequiredLabel>Shop Name (English)</RequiredLabel>
+                        <RequiredLabel required={req("shopNameEn")}>Shop Name (English)</RequiredLabel>
                         <FormControl>
                           <Input placeholder="Enter shop name in English" {...field} />
                         </FormControl>
@@ -227,7 +257,7 @@ export function CreateTenantPage() {
                   name="shopNameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Shop Name (Arabic)</RequiredLabel>
+                      <RequiredLabel required={req("shopNameAr")}>Shop Name (Arabic)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter shop name in Arabic" {...field} dir="rtl" />
                       </FormControl>
@@ -242,7 +272,7 @@ export function CreateTenantPage() {
                   name="ownerName"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Owner Name</RequiredLabel>
+                      <RequiredLabel required={req("ownerName")}>Owner Name</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter owner name" {...field} />
                       </FormControl>
@@ -257,7 +287,7 @@ export function CreateTenantPage() {
                   name="ownerEmail"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Owner Email</RequiredLabel>
+                      <RequiredLabel required={req("ownerEmail")}>Owner Email</RequiredLabel>
                       <FormControl>
                         <Input type="email" placeholder="Enter owner email" {...field} />
                       </FormControl>
@@ -272,10 +302,36 @@ export function CreateTenantPage() {
                   name="ownerMobile"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Owner Mobile</RequiredLabel>
+                      <RequiredLabel required={req("ownerMobile")}>Owner Mobile</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter owner mobile" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Tenant Logo */}
+                <FormField
+                  control={form.control}
+                  name="logo"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <RequiredLabel required={req("logo")}>Tenant Logo</RequiredLabel>
+                      <FormControl>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => field.onChange(e.target.files?.[0] ?? undefined)}
+                        />
+                      </FormControl>
+                      {field.value ? (
+                        <FormDescription>
+                          Selected: <span className="text-xs">{field.value.name}</span>
+                        </FormDescription>
+                      ) : (
+                        <FormDescription>Optional image upload for your tenant.</FormDescription>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -287,7 +343,7 @@ export function CreateTenantPage() {
                   name="contactPerson"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Contact Person</RequiredLabel>
+                      <RequiredLabel required={req("contactPerson")}>Contact Person</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter contact person" {...field} />
                       </FormControl>
@@ -302,7 +358,7 @@ export function CreateTenantPage() {
                   name="address"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <RequiredLabel>Address</RequiredLabel>
+                      <RequiredLabel required={req("address")}>Address</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter address" {...field} />
                       </FormControl>
@@ -316,7 +372,7 @@ export function CreateTenantPage() {
                   name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Country</RequiredLabel>
+                      <RequiredLabel required={req("country")}>Country</RequiredLabel>
                       <Select
                         onValueChange={(value) => {
                           field.onChange(value)
@@ -350,7 +406,7 @@ export function CreateTenantPage() {
                   name="zipCode"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Zip Code</RequiredLabel>
+                      <RequiredLabel required={req("zipCode")}>Zip Code</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter zip code" {...field} />
                       </FormControl>
@@ -364,7 +420,7 @@ export function CreateTenantPage() {
                   name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>City</RequiredLabel>
+                      <RequiredLabel required={req("city")}>City</RequiredLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value ?? ""}
@@ -401,7 +457,7 @@ export function CreateTenantPage() {
                   name="timezone"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Timezone</RequiredLabel>
+                      <RequiredLabel required={req("timezone")}>Timezone</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -427,7 +483,7 @@ export function CreateTenantPage() {
                   name="subscriptionStatus"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Subscription Status</RequiredLabel>
+                      <RequiredLabel required={req("subscriptionStatus")}>Subscription Status</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>

@@ -77,8 +77,6 @@ export function CreateInvoicePage() {
     },
   })
 
-  const nextInvoiceCode = useMemo(() => `INV-${Date.now().toString().slice(-8)}`, [])
-
   const selectedTenantId = form.watch("tenantId")
 
   const tenantSubscriptions = useMemo(() => {
@@ -147,6 +145,11 @@ export function CreateInvoicePage() {
   }, [selectedTenantId, bestSubscriptionForTenant?.id])
 
   const onSubmit = (data: z.infer<typeof createInvoiceSchema>) => {
+    const selectedTenant = tenants.find((t) => t.id === data.tenantId)
+    const rawPrefix = selectedTenant?.invoicePrefix?.trim() || "INV"
+    const safePrefix = rawPrefix.replace(/[^A-Za-z0-9]/g, "").toUpperCase() || "INV"
+    const nextInvoiceCode = `${safePrefix}-${Date.now().toString().slice(-8)}`
+
     const invoiceData: Omit<Invoice, "id" | "createdAt" | "updatedAt"> = {
       invoiceCode: nextInvoiceCode,
       tenantId: data.tenantId,

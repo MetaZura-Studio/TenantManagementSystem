@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -26,12 +26,15 @@ import { Switch } from "@/components/ui/switch"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { useSubscription, useUpdateSubscription } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { usePlans } from "@/features/plans/hooks"
 import { useCurrencies } from "@/features/currency/hooks"
-import { subscriptionSchema } from "../schemas"
+import { buildSubscriptionSchema } from "../schemas"
 import { z } from "zod"
+import { useRequiredFieldsMatrix } from "@/features/settings/hooks"
+import { isRequired } from "@/lib/forms/required-fields"
 
 interface EditSubscriptionPageProps {
   subscriptionId: string
@@ -45,6 +48,16 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
   const { data: currencies = [] } = useCurrencies()
   const updateMutation = useUpdateSubscription()
   const lastDiscountEditRef = useRef<"amount" | "percent" | null>(null)
+  const { matrix } = useRequiredFieldsMatrix()
+  const req = (field: string) => isRequired(matrix, "tenantSubscriptions", field, true)
+
+  const subscriptionSchema = useMemo(
+    () =>
+      buildSubscriptionSchema({
+        required: (field) => isRequired(matrix, "tenantSubscriptions", field, true),
+      }),
+    [matrix]
+  )
 
   const form = useForm<z.infer<typeof subscriptionSchema>>({
     resolver: zodResolver(subscriptionSchema),
@@ -160,7 +173,7 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                   name="tenantId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tenant</FormLabel>
+                      <RequiredLabel required={req("tenantId")}>Tenant</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -185,7 +198,7 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                   name="planId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Plan</FormLabel>
+                      <RequiredLabel required={req("planId")}>Plan</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -210,7 +223,7 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <RequiredLabel required={req("status")}>Status</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -236,7 +249,7 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                   name="billingCurrency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Billing Currency</FormLabel>
+                      <RequiredLabel required={req("billingCurrency")}>Billing Currency</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -261,7 +274,7 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                   name="unitPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Unit Price</FormLabel>
+                      <RequiredLabel required={req("unitPrice")}>Unit Price</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -282,7 +295,7 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                   name="discountAmount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Discount Amount</FormLabel>
+                      <RequiredLabel required={req("discountAmount")}>Discount Amount</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -306,7 +319,7 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                   name="discountPercent"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Discount Percent</FormLabel>
+                      <RequiredLabel required={req("discountPercent")}>Discount Percent</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -331,7 +344,9 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Auto Renew</FormLabel>
+                        <RequiredLabel required={req("autoRenew")} className="text-base">
+                          Auto Renew
+                        </RequiredLabel>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -345,7 +360,7 @@ export function EditSubscriptionPage({ subscriptionId }: EditSubscriptionPagePro
                   name="notes"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Notes</FormLabel>
+                      <RequiredLabel required={req("notes")}>Notes</RequiredLabel>
                       <FormControl>
                         <Textarea placeholder="Enter notes (optional)" {...field} />
                       </FormControl>

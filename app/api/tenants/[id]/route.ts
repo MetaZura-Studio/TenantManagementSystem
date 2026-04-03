@@ -2,6 +2,8 @@ import { requirePermission, PERMISSIONS } from "@/app/api/_platform/auth"
 import { jsonError, jsonOk } from "@/app/api/_platform/http"
 import { prisma } from "@/lib/server/prisma"
 import type { Tenant } from "@/features/tenants/types"
+import path from "node:path"
+import { mkdir, writeFile } from "node:fs/promises"
 
 export const runtime = "nodejs"
 
@@ -31,6 +33,8 @@ function rowToTenant(row: any): Tenant {
     city: row.city ?? "",
     zipCode: row.zip_code ?? "",
     country: row.country ?? "",
+    invoicePrefix: row.invoice_prefix ?? undefined,
+    logoUrl: row.logo_url ?? undefined,
     timezone: "UTC",
     subscriptionStatus: row.subscription_status,
     subscriptionStartDate: toIso(row.subscription_start_date) ?? undefined,
@@ -70,11 +74,29 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const id = toId(params.id)
   if (!id) return jsonError(400, "BAD_REQUEST", "Invalid id")
 
-  let updates: Partial<Tenant>
+  const contentType = req.headers.get("content-type") ?? ""
+  let updates: Partial<Tenant> & { invoicePrefix?: string }
+  let logoFile: File | null = null
+
   try {
-    updates = (await req.json()) as Partial<Tenant>
+    if (contentType.includes("multipart/form-data")) {
+      const form = await req.formData()
+      const obj: Record<string, any> = {}
+
+      for (const [key, value] of form.entries()) {
+        if (key === "logo") {
+          if (value instanceof File && value.size > 0) logoFile = value
+          continue
+        }
+        if (typeof value === "string") obj[key] = value
+      }
+
+      updates = obj as Partial<Tenant>
+    } else {
+      updates = (await req.json()) as Partial<Tenant>
+    }
   } catch {
-    return jsonError(400, "BAD_REQUEST", "Invalid JSON body")
+    return jsonError(400, "BAD_REQUEST", "Invalid request body")
   }
 
   try {
@@ -86,7 +108,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       return s.length === 0 ? null : s
     }
 
-    const row = await prisma.tenants.update({
+    let row = await prisma.tenants.update({
       where: { id },
       data: {
         tenant_code: updates.tenantCode ?? undefined,
@@ -102,16 +124,47 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         city: updates.city ?? undefined,
         zip_code: updates.zipCode ?? undefined,
         country: updates.country ?? undefined,
+        invoice_prefix: (updates as any).invoicePrefix ?? undefined,
         subscription_status: updates.subscriptionStatus ?? undefined,
         subscription_start_date: normalizeDateTime(updates.subscriptionStartDate) as any,
         subscription_end_date: normalizeDateTime(updates.subscriptionEndDate) as any,
-        locked_at: normalizeDateTime(updates.lockedAt) as any,
-        suspension_reason: updates.suspensionReason ?? undefined,
+        locked_at: normalizeDateTime((updates as any).lockedAt) as any,
+        suspension_reason: (updates as any).suspensionReason ?? undefined,
         updated_at: now,
         updated_by: null,
       } as any,
     })
-    if (!row) return jsonError(404, "NOT_FOUND", "Tenant not found")
+
+    // If a logo was provided via multipart, save it and persist `logo_url`.
+    if (logoFile) {
+      try {
+        const MAX_LOGO_BYTES = 2 * 1024 * 1024 // 2MB
+        if (logoFile.size > MAX_LOGO_BYTES) {
+          return jsonError(400, "BAD_REQUEST", "Tenant logo is too large (max 2MB)")
+        }
+
+        const ext = path.extname(logoFile.name).toLowerCase()
+        const safeExt = ext && ext.length <= 6 ? ext : ".png"
+        const safeCode = String(updates.tenantCode ?? id).replace(/[^a-z0-9_-]/gi, "") || String(id)
+        const random = Math.random().toString(16).slice(2)
+        const fileName = `${safeCode}-${Date.now()}-${random}${safeExt}`
+
+        const uploadDir = path.join(process.cwd(), "public", "uploads", "tenant-logos")
+        await mkdir(uploadDir, { recursive: true })
+
+        const bytes = Buffer.from(await logoFile.arrayBuffer())
+        await writeFile(path.join(uploadDir, fileName), bytes)
+
+        const logoUrl = `/uploads/tenant-logos/${fileName}`
+        row = await prisma.tenants.update({
+          where: { id },
+          data: { logo_url: logoUrl } as any,
+        })
+      } catch {
+        // If saving logo fails, still return updated tenant info.
+      }
+    }
+
     return jsonOk(rowToTenant(row))
   } catch (err: any) {
     const message =

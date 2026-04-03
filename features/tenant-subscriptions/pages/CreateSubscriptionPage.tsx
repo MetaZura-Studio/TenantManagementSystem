@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
@@ -26,24 +26,38 @@ import { Switch } from "@/components/ui/switch"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
+import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { useCreateSubscription } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { usePlans } from "@/features/plans/hooks"
 import { useCurrencies } from "@/features/currency/hooks"
 import { Pricing, type PricingPlanCard } from "../components"
-import { subscriptionSchema } from "../schemas"
+import { buildSubscriptionSchema } from "../schemas"
 import type { TenantSubscription } from "../types"
 import { z } from "zod"
+import { useRequiredFieldsMatrix } from "@/features/settings/hooks"
+import { isRequired } from "@/lib/forms/required-fields"
 
 export function CreateSubscriptionPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const createMutation = useCreateSubscription()
   const { data: tenants = [] } = useTenants()
   const { data: plans = [] } = usePlans()
   const { data: currencies = [] } = useCurrencies()
+  const { matrix } = useRequiredFieldsMatrix()
+  const req = (field: string) => isRequired(matrix, "tenantSubscriptions", field, true)
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const subscriptionFormRef = useRef<HTMLDivElement>(null)
   const lastDiscountEditRef = useRef<"amount" | "percent" | null>(null)
+
+  const subscriptionSchema = useMemo(
+    () =>
+      buildSubscriptionSchema({
+        required: (field) => isRequired(matrix, "tenantSubscriptions", field, true),
+      }),
+    [matrix]
+  )
 
   const form = useForm<z.infer<typeof subscriptionSchema>>({
     resolver: zodResolver(subscriptionSchema),
@@ -63,6 +77,21 @@ export function CreateSubscriptionPage() {
       notes: "",
     },
   })
+
+  // Preselect tenant/plan when coming from the upgrade screen.
+  useEffect(() => {
+    const tenantId = searchParams.get("tenantId")
+    const planId = searchParams.get("planId")
+
+    if (tenantId) {
+      form.setValue("tenantId", tenantId, { shouldDirty: true, shouldValidate: true })
+    }
+    if (planId) {
+      form.setValue("planId", planId, { shouldDirty: true, shouldValidate: true })
+      setSelectedPlanId(planId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   const unitPrice = form.watch("unitPrice")
   const discountAmount = form.watch("discountAmount")
@@ -229,7 +258,7 @@ export function CreateSubscriptionPage() {
                   name="tenantId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tenant</FormLabel>
+                      <RequiredLabel required={req("tenantId")}>Tenant</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -259,7 +288,7 @@ export function CreateSubscriptionPage() {
                     
                     return (
                       <FormItem>
-                        <FormLabel>Plan</FormLabel>
+                        <RequiredLabel required={req("planId")}>Plan</RequiredLabel>
                         <Select 
                           onValueChange={field.onChange} 
                           value={displayValue}
@@ -296,7 +325,7 @@ export function CreateSubscriptionPage() {
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <RequiredLabel required={req("status")}>Status</RequiredLabel>
                       <Select 
                         onValueChange={field.onChange} 
                         value={field.value || "Active"}
@@ -329,7 +358,7 @@ export function CreateSubscriptionPage() {
                   name="startDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Start Date</FormLabel>
+                      <RequiredLabel required={req("startDate")}>Start Date</RequiredLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -343,7 +372,7 @@ export function CreateSubscriptionPage() {
                   name="currentPeriodStart"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current Period Start</FormLabel>
+                      <RequiredLabel required={req("currentPeriodStart")}>Current Period Start</RequiredLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -357,7 +386,7 @@ export function CreateSubscriptionPage() {
                   name="currentPeriodEnd"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current Period End</FormLabel>
+                      <RequiredLabel required={req("currentPeriodEnd")}>Current Period End</RequiredLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -371,7 +400,7 @@ export function CreateSubscriptionPage() {
                   name="billingCurrency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Billing Currency</FormLabel>
+                      <RequiredLabel required={req("billingCurrency")}>Billing Currency</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -400,7 +429,7 @@ export function CreateSubscriptionPage() {
                     
                     return (
                       <FormItem>
-                        <FormLabel>Unit Price</FormLabel>
+                        <RequiredLabel required={req("unitPrice")}>Unit Price</RequiredLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -429,7 +458,7 @@ export function CreateSubscriptionPage() {
                   name="discountAmount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Discount Amount</FormLabel>
+                      <RequiredLabel required={req("discountAmount")}>Discount Amount</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -452,7 +481,7 @@ export function CreateSubscriptionPage() {
                   name="discountPercent"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Discount Percent</FormLabel>
+                      <RequiredLabel required={req("discountPercent")}>Discount Percent</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -476,7 +505,9 @@ export function CreateSubscriptionPage() {
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Auto Renew</FormLabel>
+                        <RequiredLabel required={req("autoRenew")} className="text-base">
+                          Auto Renew
+                        </RequiredLabel>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -491,7 +522,9 @@ export function CreateSubscriptionPage() {
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Cancel at Period End</FormLabel>
+                        <RequiredLabel required={req("cancelAtPeriodEnd")} className="text-base">
+                          Cancel at Period End
+                        </RequiredLabel>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -505,7 +538,7 @@ export function CreateSubscriptionPage() {
                   name="notes"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Notes</FormLabel>
+                      <RequiredLabel required={req("notes")}>Notes</RequiredLabel>
                       <FormControl>
                         <Textarea placeholder="Enter notes (optional)" {...field} />
                       </FormControl>

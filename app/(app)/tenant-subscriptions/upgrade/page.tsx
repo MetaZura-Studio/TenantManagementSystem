@@ -1,18 +1,5 @@
-import { PageHeader } from "@/components/shared/page-header"
+import { UpgradeSubscriptionPage } from "@/features/tenant-subscriptions/pages/UpgradeSubscriptionPage"
 
-export default function UpgradeSubscriptionPage() {
-  return (
-    <>
-      <PageHeader
-        title="Subscription Upgrade"
-        subtitle="Upgrade tenant subscription plan"
-        breadcrumbs={[
-          { label: "Plans & Subscriptions", href: "/plans" },
-          { label: "Tenant Subscriptions", href: "/tenant-subscriptions" },
-          { label: "Subscription Upgrade" },
-        ]}
-      />
-      <p className="text-muted-foreground">Upgrade wizard will be displayed here</p>
-    </>
-  )
+export default function UpgradeSubscriptionRoute() {
+  return <UpgradeSubscriptionPage />
 }

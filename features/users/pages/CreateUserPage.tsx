@@ -31,14 +31,23 @@ import { useCreateUser } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { useBranches } from "@/features/branches/hooks"
 import { useRoles } from "@/features/roles/hooks"
-import { userSchema } from "../schemas"
+import { buildUserSchema } from "../schemas"
 import type { User } from "../types"
 import { z } from "zod"
-
-const formSchema = userSchema.omit({ status: true })
-const MAIN_BRANCH_VALUE = "__MAIN__"
+import { useRequiredFieldsMatrix } from "@/features/settings/hooks"
+import { isRequired } from "@/lib/forms/required-fields"
 
 export function CreateUserPage() {
+  const { matrix } = useRequiredFieldsMatrix()
+  const formSchema = useMemo(
+    () =>
+      buildUserSchema({
+        required: (field) => isRequired(matrix, "users", field, true),
+      }).omit({ status: true }),
+    [matrix]
+  )
+  const req = useMemo(() => (field: string) => isRequired(matrix, "users", field, true), [matrix])
+  const MAIN_BRANCH_VALUE = "__MAIN__"
   const router = useRouter()
   const createMutation = useCreateUser()
   const { data: tenants = [] } = useTenants()
@@ -131,7 +140,7 @@ export function CreateUserPage() {
                 name="tenantId"
                 render={({ field }) => (
                   <FormItem>
-                    <RequiredLabel>Tenant</RequiredLabel>
+                      <RequiredLabel required={req("tenantId")}>Tenant</RequiredLabel>
                     <Select onValueChange={(value) => {
                       field.onChange(value)
                       form.setValue("branchId", "") // Reset branch when tenant changes
@@ -197,7 +206,7 @@ export function CreateUserPage() {
                   name="roleId"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Role</RequiredLabel>
+                      <RequiredLabel required={req("roleId")}>Role</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -222,7 +231,7 @@ export function CreateUserPage() {
                   name="fullNameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Full Name (English)</RequiredLabel>
+                      <RequiredLabel required={req("fullNameEn")}>Full Name (English)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter full name in English" {...field} />
                       </FormControl>
@@ -236,7 +245,7 @@ export function CreateUserPage() {
                   name="fullNameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Full Name (Arabic)</RequiredLabel>
+                      <RequiredLabel required={req("fullNameAr")}>Full Name (Arabic)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter full name in Arabic" {...field} dir="rtl" />
                       </FormControl>
@@ -250,7 +259,7 @@ export function CreateUserPage() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Username</RequiredLabel>
+                      <RequiredLabel required={req("username")}>Username</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter username" {...field} />
                       </FormControl>
@@ -264,7 +273,7 @@ export function CreateUserPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Email</RequiredLabel>
+                      <RequiredLabel required={req("email")}>Email</RequiredLabel>
                       <FormControl>
                         <Input type="email" placeholder="Enter email" {...field} />
                       </FormControl>
@@ -278,7 +287,7 @@ export function CreateUserPage() {
                   name="mobile"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Mobile</RequiredLabel>
+                      <RequiredLabel required={req("mobile")}>Mobile</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter mobile number" {...field} />
                       </FormControl>
@@ -292,7 +301,7 @@ export function CreateUserPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Password</RequiredLabel>
+                      <RequiredLabel required={req("password")}>Password</RequiredLabel>
                       <FormControl>
                         <Input type="password" placeholder="Enter password" {...field} />
                       </FormControl>

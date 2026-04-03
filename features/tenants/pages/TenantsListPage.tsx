@@ -93,6 +93,25 @@ export function TenantsListPage() {
       header: "Owner Email",
     },
     {
+      accessorKey: "invoicePrefix",
+      header: "Invoice Prefix",
+      cell: ({ row }) => row.original.invoicePrefix || "—",
+    },
+    {
+      id: "logo",
+      header: "Logo",
+      cell: ({ row }) =>
+        row.original.logoUrl ? (
+          <img
+            src={row.original.logoUrl}
+            alt={`${row.original.shopNameEn} logo`}
+            className="h-8 w-8 rounded-md border border-border/50 object-contain bg-white"
+          />
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
       accessorKey: "subscriptionStatus",
       header: "Subscription Status",
       cell: ({ row }) => <StatusBadge status={row.original.subscriptionStatus} />,

@@ -14,7 +14,7 @@ import { useTenants } from "@/features/tenants/hooks"
 import { usePlans } from "@/features/plans/hooks"
 import type { TenantSubscription } from "../types"
 import { ColumnDef } from "@tanstack/react-table"
-import { Pencil, Trash2, Plus, Eye } from "lucide-react"
+import { Pencil, Trash2, Plus, Eye, ArrowUpCircle } from "lucide-react"
 import Link from "next/link"
 
 function formatDateOnly(value: unknown): string {
@@ -118,6 +118,14 @@ export function SubscriptionsListPage() {
                 <Eye className="h-4 w-4" />
               </Button>
             </Link>
+            <Link
+              href={`/tenant-subscriptions/upgrade?subscriptionId=${encodeURIComponent(subscription.id)}`}
+              title="Upgrade plan"
+            >
+              <Button variant="ghost" size="icon">
+                <ArrowUpCircle className="h-4 w-4" />
+              </Button>
+            </Link>
             <Link href={`/tenant-subscriptions/${subscription.id}/edit`}>
               <Button variant="ghost" size="icon">
                 <Pencil className="h-4 w-4" />
@@ -146,15 +154,10 @@ export function SubscriptionsListPage() {
           { label: "Tenant Subscriptions" },
         ]}
         actions={
-          <>
-            <Button onClick={() => router.push("/tenant-subscriptions/upgrade")} variant="outline" size="lg">
-              Upgrade Plan
-            </Button>
-            <Button onClick={() => router.push("/tenant-subscriptions/new")} size="lg">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Subscription
-            </Button>
-          </>
+          <Button onClick={() => router.push("/tenant-subscriptions/new")} size="lg">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Subscription
+          </Button>
         }
       />
 

@@ -28,17 +28,30 @@ import { toast } from "@/components/shared/feedback/use-toast"
 import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { useCreatePlan } from "../hooks"
 import { useCurrencies } from "@/features/currency/hooks"
-import { planSchema } from "../schemas"
+import { buildPlanSchema } from "../schemas"
 import type { Plan } from "../types"
 import { z } from "zod"
+import { useRequiredFieldsMatrix } from "@/features/settings/hooks"
+import { isRequired } from "@/lib/forms/required-fields"
+import { useMemo } from "react"
 
 export function CreatePlanPage() {
   const router = useRouter()
   const createMutation = useCreatePlan()
   const { data: currencies = [] } = useCurrencies()
+  const { matrix } = useRequiredFieldsMatrix()
+  const req = (field: string) => isRequired(matrix, "plans", field, true)
 
-  const form = useForm<z.infer<typeof planSchema>>({
-    resolver: zodResolver(planSchema),
+  const schema = useMemo(
+    () =>
+      buildPlanSchema({
+        required: (field) => isRequired(matrix, "plans", field, true),
+      }),
+    [matrix]
+  )
+
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
     defaultValues: {
       planCode: "",
       nameEn: "",
@@ -55,6 +68,10 @@ export function CreatePlanPage() {
     },
   })
 
+  const billingCycle = form.watch("billingCycle")
+  const needsMonthly = billingCycle === "Monthly" || billingCycle === "Both"
+  const needsYearly = billingCycle === "Yearly" || billingCycle === "Both"
+
   const onSubmit = (data: z.infer<typeof planSchema>) => {
     const planData: Omit<Plan, "id" | "createdAt" | "updatedAt"> = {
       planCode: data.planCode,
@@ -63,8 +80,8 @@ export function CreatePlanPage() {
       description: data.description || undefined,
       billingCycle: data.billingCycle,
       currencyCode: data.currencyCode,
-      monthlyPrice: data.monthlyPrice,
-      yearlyPrice: data.yearlyPrice,
+      monthlyPrice: needsMonthly ? data.monthlyPrice : 0,
+      yearlyPrice: needsYearly ? data.yearlyPrice : 0,
       maxBranches: data.maxBranches,
       maxUsers: data.maxUsers,
       isActive: data.isActive,
@@ -112,7 +129,7 @@ export function CreatePlanPage() {
                   name="planCode"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Plan Code</RequiredLabel>
+                      <RequiredLabel required={req("planCode")}>Plan Code</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter plan code" {...field} />
                       </FormControl>
@@ -126,7 +143,7 @@ export function CreatePlanPage() {
                   name="nameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Name (English)</RequiredLabel>
+                      <RequiredLabel required={req("nameEn")}>Name (English)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter plan name (English)" {...field} />
                       </FormControl>
@@ -140,7 +157,7 @@ export function CreatePlanPage() {
                   name="nameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Name (Arabic)</RequiredLabel>
+                      <RequiredLabel required={req("nameAr")}>Name (Arabic)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter plan name (Arabic)" dir="rtl" {...field} />
                       </FormControl>
@@ -154,7 +171,7 @@ export function CreatePlanPage() {
                   name="billingCycle"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Billing Cycle</RequiredLabel>
+                      <RequiredLabel required={req("billingCycle")}>Billing Cycle</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -164,6 +181,7 @@ export function CreatePlanPage() {
                         <SelectContent>
                           <SelectItem value="Monthly">Monthly</SelectItem>
                           <SelectItem value="Yearly">Yearly</SelectItem>
+                          <SelectItem value="Both">Both</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -176,7 +194,7 @@ export function CreatePlanPage() {
                   name="currencyCode"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Currency</RequiredLabel>
+                      <RequiredLabel required={req("currencyCode")}>Currency</RequiredLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -201,7 +219,7 @@ export function CreatePlanPage() {
                   name="monthlyPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Monthly Price</RequiredLabel>
+                      <RequiredLabel required={needsMonthly && req("monthlyPrice")}>Monthly Price</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -210,6 +228,7 @@ export function CreatePlanPage() {
                           className="no-spinner"
                           {...field}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          disabled={!needsMonthly}
                         />
                       </FormControl>
                       <FormMessage />
@@ -222,7 +241,7 @@ export function CreatePlanPage() {
                   name="yearlyPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Yearly Price</RequiredLabel>
+                      <RequiredLabel required={needsYearly && req("yearlyPrice")}>Yearly Price</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -231,6 +250,7 @@ export function CreatePlanPage() {
                           className="no-spinner"
                           {...field}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          disabled={!needsYearly}
                         />
                       </FormControl>
                       <FormMessage />
@@ -243,7 +263,7 @@ export function CreatePlanPage() {
                   name="maxBranches"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Max Branches</RequiredLabel>
+                      <RequiredLabel required={req("maxBranches")}>Max Branches</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -263,7 +283,7 @@ export function CreatePlanPage() {
                   name="maxUsers"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Max Users</RequiredLabel>
+                      <RequiredLabel required={req("maxUsers")}>Max Users</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -283,7 +303,7 @@ export function CreatePlanPage() {
                   name="featuresJson"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Features (JSON)</FormLabel>
+                      <RequiredLabel required={req("featuresJson")}>Features (JSON)</RequiredLabel>
                       <FormControl>
                         <Textarea placeholder='e.g. ["Feature A","Feature B"]' {...field} />
                       </FormControl>
@@ -298,7 +318,9 @@ export function CreatePlanPage() {
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Active</FormLabel>
+                        <RequiredLabel required={req("isActive")} className="text-base">
+                          Active
+                        </RequiredLabel>
                         <div className="text-sm text-muted-foreground">
                           Enable or disable this plan
                         </div>
@@ -318,7 +340,7 @@ export function CreatePlanPage() {
                   name="description"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Description</FormLabel>
+                      <RequiredLabel required={req("description")}>Description</RequiredLabel>
                       <FormControl>
                         <Textarea placeholder="Enter plan description (optional)" {...field} />
                       </FormControl>

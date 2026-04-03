@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
 import confetti from "canvas-confetti"
 import NumberFlow from "@number-flow/react"
@@ -39,6 +39,9 @@ export function Pricing({
   onSelectPlan,
   selectedPlanId,
 }: PricingProps) {
+  const hasMonthly = plans.some((p) => Number(p.price ?? 0) > 0)
+  const hasYearly = plans.some((p) => Number(p.yearlyPrice ?? 0) > 0)
+
   const [isMonthly, setIsMonthly] = useState(true)
   const isDesktop = useMediaQuery("(min-width: 768px)")
   const switchRef = useRef<HTMLButtonElement>(null)
@@ -69,6 +72,12 @@ export function Pricing({
     }
   }
 
+  // Ensure we don't show "$0/year" for monthly-only plan sets (and vice versa).
+  useEffect(() => {
+    if (!hasYearly && !isMonthly) setIsMonthly(true)
+    if (!hasMonthly && isMonthly) setIsMonthly(false)
+  }, [hasMonthly, hasYearly, isMonthly])
+
   return (
     <div className="w-full py-8">
       <div className="text-center space-y-3 mb-8">
@@ -76,21 +85,23 @@ export function Pricing({
         <p className="text-muted-foreground text-base whitespace-pre-line">{description}</p>
       </div>
 
-      <div className="flex justify-center items-center mb-8">
-        <label className="relative inline-flex items-center cursor-pointer">
-          <Label>
-            <Switch
-              ref={switchRef as any}
-              checked={!isMonthly}
-              onCheckedChange={handleToggle}
-              className="relative"
-            />
-          </Label>
-        </label>
-        <span className="ml-2 font-semibold">
-          Annual billing <span className="text-primary">(Save 20%)</span>
-        </span>
-      </div>
+      {hasMonthly && hasYearly ? (
+        <div className="flex justify-center items-center mb-8">
+          <label className="relative inline-flex items-center cursor-pointer">
+            <Label>
+              <Switch
+                ref={switchRef as any}
+                checked={!isMonthly}
+                onCheckedChange={handleToggle}
+                className="relative"
+              />
+            </Label>
+          </label>
+          <span className="ml-2 font-semibold">
+            Annual billing <span className="text-primary">(Save 20%)</span>
+          </span>
+        </div>
+      ) : null}
 
       <div className="flex flex-row justify-center items-center gap-4 mx-auto px-4">
         {plans.map((plan, index) => {

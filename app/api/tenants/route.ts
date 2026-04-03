@@ -2,6 +2,8 @@ import { requirePermission, PERMISSIONS } from "@/app/api/_platform/auth"
 import { jsonError, jsonOk } from "@/app/api/_platform/http"
 import { prisma } from "@/lib/server/prisma"
 import type { Tenant } from "@/features/tenants/types"
+import path from "node:path"
+import { mkdir, writeFile } from "node:fs/promises"
 
 export const runtime = "nodejs"
 
@@ -26,6 +28,8 @@ function rowToTenant(row: any): Tenant {
     city: row.city ?? "",
     zipCode: row.zip_code ?? "",
     country: row.country ?? "",
+    invoicePrefix: row.invoice_prefix ?? undefined,
+    logoUrl: row.logo_url ?? undefined,
     timezone: "UTC",
     subscriptionStatus: row.subscription_status,
     subscriptionStartDate: toIso(row.subscription_start_date) ?? undefined,
@@ -59,11 +63,27 @@ export async function POST(req: Request) {
   const auth = requirePermission(PERMISSIONS.TENANTS.CREATE)
   if (!auth.ok) return auth.response
 
-  let body: Partial<Tenant>
+  const contentType = req.headers.get("content-type") ?? ""
+  let body: Partial<Tenant> & { invoicePrefix?: string }
+  let logoFile: File | null = null
+
   try {
-    body = (await req.json()) as Partial<Tenant>
+    if (contentType.includes("multipart/form-data")) {
+      const form = await req.formData()
+      const obj: Record<string, any> = {}
+      for (const [key, value] of form.entries()) {
+        if (key === "logo") {
+          if (value instanceof File && value.size > 0) logoFile = value
+          continue
+        }
+        if (typeof value === "string") obj[key] = value
+      }
+      body = obj as Partial<Tenant>
+    } else {
+      body = (await req.json()) as Partial<Tenant>
+    }
   } catch {
-    return jsonError(400, "BAD_REQUEST", "Invalid JSON body")
+    return jsonError(400, "BAD_REQUEST", "Invalid request body")
   }
 
   if (!body?.tenantCode || !body?.slug || !body?.shopNameEn || !body?.ownerName || !body?.ownerEmail) {
@@ -97,6 +117,7 @@ export async function POST(req: Request) {
           city: body.city ?? null,
           zip_code: body.zipCode ?? null,
           country: body.country ?? null,
+          invoice_prefix: body.invoicePrefix ?? null,
           status: "Active",
           subscription_status: body.subscriptionStatus ?? "TRIAL",
           subscription_start_date: parseDateOrNull(body.subscriptionStartDate) as any,
@@ -110,6 +131,7 @@ export async function POST(req: Request) {
           deleted_at: null,
           remarks: null,
           state: null,
+          logo_url: null,
         } as any,
       })
 
@@ -144,6 +166,40 @@ export async function POST(req: Request) {
 
       return tenant
     })
+
+    // Optional logo upload. Saved to `public/uploads/tenant-logos` and persisted as `logo_url`.
+    if (logoFile) {
+      try {
+        const MAX_LOGO_BYTES = 2 * 1024 * 1024 // 2MB
+        if (logoFile.size > MAX_LOGO_BYTES) {
+          return jsonError(400, "BAD_REQUEST", "Tenant logo is too large (max 2MB)")
+        }
+
+        const ext = path.extname(logoFile.name).toLowerCase()
+        const safeExt = ext && ext.length <= 6 ? ext : ".png"
+        const safeCode = String(body.tenantCode).replace(/[^a-z0-9_-]/gi, "")
+        const random = Math.random().toString(16).slice(2)
+        const fileName = `${safeCode}-${Date.now()}-${random}${safeExt}`
+        const uploadDir = path.join(process.cwd(), "public", "uploads", "tenant-logos")
+        await mkdir(uploadDir, { recursive: true })
+
+        const bytes = Buffer.from(await logoFile.arrayBuffer())
+        await writeFile(path.join(uploadDir, fileName), bytes)
+        const logoUrl = `/uploads/tenant-logos/${fileName}`
+
+        const updated = await prisma.tenants.update({
+          where: { id: created.id },
+          data: { logo_url: logoUrl },
+        })
+
+        return jsonOk(rowToTenant(updated), { status: 201 })
+      } catch {
+        // Don't block tenant creation if logo saving fails.
+        // Client can retry upload later via tenant update (if implemented).
+        return jsonOk(rowToTenant(created), { status: 201 })
+      }
+    }
+
     return jsonOk(rowToTenant(created), { status: 201 })
   } catch (err: any) {
     const message =

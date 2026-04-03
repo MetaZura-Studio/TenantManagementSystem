@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -29,8 +29,10 @@ import { toast } from "@/components/shared/feedback/use-toast"
 import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { usePlan, useUpdatePlan } from "../hooks"
 import { useCurrencies } from "@/features/currency/hooks"
-import { planSchema } from "../schemas"
+import { buildPlanSchema } from "../schemas"
 import { z } from "zod"
+import { useRequiredFieldsMatrix } from "@/features/settings/hooks"
+import { isRequired } from "@/lib/forms/required-fields"
 
 interface EditPlanPageProps {
   planId: string
@@ -41,9 +43,19 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
   const { data: plan, isLoading } = usePlan(planId)
   const { data: currencies = [] } = useCurrencies()
   const updateMutation = useUpdatePlan()
+  const { matrix } = useRequiredFieldsMatrix()
+  const req = (field: string) => isRequired(matrix, "plans", field, true)
 
-  const form = useForm<z.infer<typeof planSchema>>({
-    resolver: zodResolver(planSchema),
+  const schema = useMemo(
+    () =>
+      buildPlanSchema({
+        required: (field) => isRequired(matrix, "plans", field, true),
+      }),
+    [matrix]
+  )
+
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
     defaultValues: {
       planCode: "",
       nameEn: "",
@@ -59,6 +71,10 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
       isActive: true,
     },
   })
+
+  const billingCycle = form.watch("billingCycle")
+  const needsMonthly = billingCycle === "Monthly" || billingCycle === "Both"
+  const needsYearly = billingCycle === "Yearly" || billingCycle === "Both"
 
   useEffect(() => {
     if (!plan) return
@@ -78,7 +94,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
     })
   }, [plan, form])
 
-  const onSubmit = (data: z.infer<typeof planSchema>) => {
+  const onSubmit = (data: z.infer<typeof schema>) => {
     updateMutation.mutate(
       {
         id: planId,
@@ -89,8 +105,8 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
           description: data.description || undefined,
           billingCycle: data.billingCycle,
           currencyCode: data.currencyCode,
-          monthlyPrice: data.monthlyPrice,
-          yearlyPrice: data.yearlyPrice,
+          monthlyPrice: needsMonthly ? data.monthlyPrice : 0,
+          yearlyPrice: needsYearly ? data.yearlyPrice : 0,
           maxBranches: data.maxBranches,
           maxUsers: data.maxUsers,
           featuresJson: data.featuresJson || undefined,
@@ -149,7 +165,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="planCode"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Plan Code</RequiredLabel>
+                      <RequiredLabel required={req("planCode")}>Plan Code</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter plan code" {...field} />
                       </FormControl>
@@ -163,7 +179,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="nameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Name (English)</RequiredLabel>
+                      <RequiredLabel required={req("nameEn")}>Name (English)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter plan name (English)" {...field} />
                       </FormControl>
@@ -177,7 +193,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="nameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Name (Arabic)</RequiredLabel>
+                      <RequiredLabel required={req("nameAr")}>Name (Arabic)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter plan name (Arabic)" dir="rtl" {...field} />
                       </FormControl>
@@ -191,7 +207,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="billingCycle"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Billing Cycle</RequiredLabel>
+                      <RequiredLabel required={req("billingCycle")}>Billing Cycle</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -201,6 +217,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                         <SelectContent>
                           <SelectItem value="Monthly">Monthly</SelectItem>
                           <SelectItem value="Yearly">Yearly</SelectItem>
+                          <SelectItem value="Both">Both</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -213,7 +230,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="currencyCode"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Currency</RequiredLabel>
+                      <RequiredLabel required={req("currencyCode")}>Currency</RequiredLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -238,7 +255,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="monthlyPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Monthly Price</RequiredLabel>
+                      <RequiredLabel required={needsMonthly && req("monthlyPrice")}>Monthly Price</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -246,6 +263,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                           placeholder="Enter monthly price"
                           {...field}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          disabled={!needsMonthly}
                         />
                       </FormControl>
                       <FormMessage />
@@ -258,7 +276,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="yearlyPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Yearly Price</RequiredLabel>
+                      <RequiredLabel required={needsYearly && req("yearlyPrice")}>Yearly Price</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -266,6 +284,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                           placeholder="Enter yearly price"
                           {...field}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          disabled={!needsYearly}
                         />
                       </FormControl>
                       <FormMessage />
@@ -278,7 +297,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="maxBranches"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Max Branches</RequiredLabel>
+                      <RequiredLabel required={req("maxBranches")}>Max Branches</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -297,7 +316,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="maxUsers"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Max Users</RequiredLabel>
+                      <RequiredLabel required={req("maxUsers")}>Max Users</RequiredLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -316,7 +335,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="featuresJson"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Features (JSON)</FormLabel>
+                      <RequiredLabel required={req("featuresJson")}>Features (JSON)</RequiredLabel>
                       <FormControl>
                         <Textarea placeholder='e.g. ["Feature A","Feature B"]' {...field} />
                       </FormControl>
@@ -331,7 +350,9 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Active</FormLabel>
+                        <RequiredLabel required={req("isActive")} className="text-base">
+                          Active
+                        </RequiredLabel>
                         <div className="text-sm text-muted-foreground">
                           Enable or disable this plan
                         </div>
@@ -351,7 +372,7 @@ export function EditPlanPage({ planId }: EditPlanPageProps) {
                   name="description"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Description</FormLabel>
+                      <RequiredLabel required={req("description")}>Description</RequiredLabel>
                       <FormControl>
                         <Textarea placeholder="Enter plan description (optional)" {...field} />
                       </FormControl>

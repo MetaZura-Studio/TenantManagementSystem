@@ -22,21 +22,55 @@ export const tenantsApi = {
     return (await parseOrThrow(res)) as Tenant
   },
   create: async (
-    tenant: Omit<Tenant, "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy" | "deletedAt">
+    tenant: Omit<Tenant, "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy" | "deletedAt">,
+    logoFile?: File | null
   ): Promise<Tenant> => {
-    const res = await fetch("/api/tenants", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(tenant),
-    })
+    const hasLogo = !!logoFile && logoFile instanceof File && logoFile.size > 0
+
+    const res = await (hasLogo
+      ? fetch("/api/tenants", {
+          method: "POST",
+          body: (() => {
+            const form = new FormData()
+
+            // Send all tenant fields as strings.
+            for (const [key, value] of Object.entries(tenant)) {
+              if (value === undefined || value === null) continue
+              form.append(key, String(value))
+            }
+
+            form.append("logo", logoFile as File)
+            return form
+          })(),
+        })
+      : fetch("/api/tenants", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(tenant),
+        }))
     return (await parseOrThrow(res)) as Tenant
   },
-  update: async (id: string, updates: Partial<Tenant>): Promise<Tenant> => {
-    const res = await fetch(`/api/tenants/${encodeURIComponent(id)}`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(updates),
-    })
+  update: async (id: string, updates: Partial<Tenant>, logoFile?: File | null): Promise<Tenant> => {
+    const hasLogo = !!logoFile && logoFile instanceof File && logoFile.size > 0
+
+    const res = await (hasLogo
+      ? fetch(`/api/tenants/${encodeURIComponent(id)}`, {
+          method: "PUT",
+          body: (() => {
+            const form = new FormData()
+            for (const [key, value] of Object.entries(updates)) {
+              if (value === undefined || value === null) continue
+              form.append(key, String(value))
+            }
+            form.append("logo", logoFile as File)
+            return form
+          })(),
+        })
+      : fetch(`/api/tenants/${encodeURIComponent(id)}`, {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(updates),
+        }))
     return (await parseOrThrow(res)) as Tenant
   },
   delete: async (id: string): Promise<void> => {

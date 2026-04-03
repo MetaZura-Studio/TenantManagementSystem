@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -27,8 +28,11 @@ import { RequiredLabel } from "@/components/shared/forms/RequiredLabel"
 import { useUser, useUpdateUser } from "../hooks"
 import { useTenants } from "@/features/tenants/hooks"
 import { useRoles } from "@/features/roles/hooks"
-import { userSchema } from "../schemas"
+import { buildUserSchema } from "../schemas"
 import { z } from "zod"
+import { useRequiredFieldsMatrix } from "@/features/settings/hooks"
+import { isRequired } from "@/lib/forms/required-fields"
+import { useMemo } from "react"
 
 interface EditUserPageProps {
   userId: string
@@ -40,24 +44,93 @@ export function EditUserPage({ userId }: EditUserPageProps) {
   const { data: tenants = [] } = useTenants()
   const { data: roles = [] } = useRoles()
   const updateMutation = useUpdateUser()
+  const { matrix } = useRequiredFieldsMatrix()
+  const [didInit, setDidInit] = useState(false)
+
+  const userSchema = useMemo(
+    () =>
+      buildUserSchema({
+        required: (field) => isRequired(matrix, "users", field, true),
+      }),
+    [matrix]
+  )
+
+  const req = useMemo(() => (field: string) => isRequired(matrix, "users", field, true), [matrix])
 
   const form = useForm<z.infer<typeof userSchema>>({
     resolver: zodResolver(userSchema),
-    values: user
-      ? {
-          username: user.username,
-          password: "",
-          email: user.email,
-          mobile: user.mobile,
-          fullNameEn: user.fullNameEn || "",
-          fullNameAr: user.fullNameAr || "",
-          tenantId: user.tenantId,
-          branchId: user.branchId || "",
-          roleId: user.roleId,
-          status: user.status,
-        }
-      : undefined,
+    defaultValues: {
+      username: "",
+      password: "",
+      email: "",
+      mobile: "",
+      fullNameEn: "",
+      fullNameAr: "",
+      tenantId: "",
+      branchId: undefined,
+      roleId: "",
+      status: "ACTIVE",
+      address: undefined,
+      zipCode: undefined,
+      country: undefined,
+    },
   })
+
+  useEffect(() => {
+    // On navigation between users, ensure we re-initialize the form once per userId.
+    setDidInit(false)
+  }, [userId])
+
+  useEffect(() => {
+    if (!user) return
+
+    form.reset({
+      username: user.username,
+      password: "",
+      email: user.email,
+      mobile: user.mobile,
+      fullNameEn: user.fullNameEn || "",
+      fullNameAr: user.fullNameAr || "",
+      tenantId: user.tenantId != null ? String(user.tenantId) : "",
+      branchId: user.branchId || undefined,
+      roleId: user.roleId != null ? String(user.roleId) : "",
+      status: user.status,
+      address: user.address,
+      zipCode: user.zipCode,
+      country: user.country,
+    })
+
+    // Radix Select can keep showing placeholder if the value is not explicitly set after async load.
+    // Force-set these fields to ensure the Select trigger renders the selected option.
+    if (user.tenantId != null) {
+      form.setValue("tenantId", String(user.tenantId), { shouldDirty: false, shouldValidate: true })
+    }
+    if (user.roleId != null) {
+      form.setValue("roleId", String(user.roleId), { shouldDirty: false, shouldValidate: true })
+    }
+    if (user.status) {
+      form.setValue("status", user.status, { shouldDirty: false, shouldValidate: true })
+    }
+    // Mark initialized after we’ve applied the saved values.
+    setDidInit(true)
+  }, [user, form])
+
+  // Guard against async timing issues: ensure Select fields keep the saved IDs once option lists load.
+  useEffect(() => {
+    if (!user) return
+
+    const currentTenantId = form.getValues("tenantId")
+    const savedTenantId = user.tenantId != null ? String(user.tenantId) : ""
+    if (!currentTenantId && savedTenantId) {
+      form.setValue("tenantId", savedTenantId, { shouldDirty: false, shouldValidate: true })
+    }
+
+    const currentRoleId = form.getValues("roleId")
+    const savedRoleId = user.roleId != null ? String(user.roleId) : ""
+    if (!currentRoleId && savedRoleId) {
+      form.setValue("roleId", savedRoleId, { shouldDirty: false, shouldValidate: true })
+    }
+  }, [user, tenants.length, roles.length, form])
 
   const onSubmit = (data: z.infer<typeof userSchema>) => {
     updateMutation.mutate(
@@ -94,7 +167,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
     )
   }
 
-  if (isLoading) {
+  if (isLoading || !didInit) {
     return <div className="text-center py-8">Loading...</div>
   }
 
@@ -127,7 +200,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Username</RequiredLabel>
+                      <RequiredLabel required={req("username")}>Username</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter username" {...field} />
                       </FormControl>
@@ -141,7 +214,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Email</RequiredLabel>
+                      <RequiredLabel required={req("email")}>Email</RequiredLabel>
                       <FormControl>
                         <Input type="email" placeholder="Enter email" {...field} />
                       </FormControl>
@@ -155,7 +228,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="mobile"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Mobile</RequiredLabel>
+                      <RequiredLabel required={req("mobile")}>Mobile</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter mobile number" {...field} />
                       </FormControl>
@@ -169,7 +242,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="fullNameEn"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Full Name (EN)</RequiredLabel>
+                      <RequiredLabel required={req("fullNameEn")}>Full Name (EN)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter full name (English)" {...field} />
                       </FormControl>
@@ -183,7 +256,7 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="fullNameAr"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Full Name (AR)</RequiredLabel>
+                      <RequiredLabel required={req("fullNameAr")}>Full Name (AR)</RequiredLabel>
                       <FormControl>
                         <Input placeholder="Enter full name (Arabic)" {...field} />
                       </FormControl>
@@ -197,14 +270,24 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="tenantId"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Tenant</RequiredLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <RequiredLabel required={req("tenantId")}>Tenant</RequiredLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select tenant" />
+                            <span className={field.value ? "" : "text-muted-foreground"}>
+                              {field.value
+                                ? tenants.find((t) => String(t.id) === String(field.value))?.shopNameEn ??
+                                  `Tenant ID: ${String(field.value)}`
+                                : "Select tenant"}
+                            </span>
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          {field.value && !tenants.some((t) => String(t.id) === String(field.value)) ? (
+                            <SelectItem key={`current-tenant-${field.value}`} value={String(field.value)}>
+                              Current Tenant (ID: {String(field.value)})
+                            </SelectItem>
+                          ) : null}
                           {tenants.map((tenant) => (
                             <SelectItem key={tenant.id} value={tenant.id}>
                               {tenant.shopNameEn}
@@ -222,14 +305,24 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="roleId"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Role</RequiredLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <RequiredLabel required={req("roleId")}>Role</RequiredLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select role" />
+                            <span className={field.value ? "" : "text-muted-foreground"}>
+                              {field.value
+                                ? roles.find((r) => String(r.id) === String(field.value))?.roleName ??
+                                  `Role ID: ${String(field.value)}`
+                                : "Select role"}
+                            </span>
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          {field.value && !roles.some((r) => String(r.id) === String(field.value)) ? (
+                            <SelectItem key={`current-role-${field.value}`} value={String(field.value)}>
+                              Current Role (ID: {String(field.value)})
+                            </SelectItem>
+                          ) : null}
                           {roles.map((role) => (
                             <SelectItem key={role.id} value={role.id}>
                               {role.roleName}
@@ -247,16 +340,17 @@ export function EditUserPage({ userId }: EditUserPageProps) {
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <RequiredLabel>Status</RequiredLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <RequiredLabel required={req("status")}>Status</RequiredLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? "ACTIVE"}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Inactive">Inactive</SelectItem>
+                          <SelectItem value="ACTIVE">Active</SelectItem>
+                          <SelectItem value="INACTIVE">Inactive</SelectItem>
+                          <SelectItem value="LOCKED">Locked</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

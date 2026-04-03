@@ -12,8 +12,9 @@ import { toast } from "@/components/shared/feedback/use-toast"
 import { useInvoices, useDeleteInvoice } from "../hooks"
 import type { Invoice } from "../types"
 import { ColumnDef } from "@tanstack/react-table"
-import { Pencil, Trash2, Plus, Eye } from "lucide-react"
+import { Pencil, Trash2, Plus, Eye, Printer } from "lucide-react"
 import Link from "next/link"
+import { useTenants } from "@/features/tenants/hooks"
 
 function toInvoiceLifecycleStatus(invoice: Invoice): string {
   const raw = String(invoice.status || "").toUpperCase()
@@ -47,6 +48,7 @@ export function InvoicesListPage() {
 
   const { data: invoices = [], isLoading } = useInvoices()
   const deleteMutation = useDeleteInvoice()
+  const { data: tenants = [] } = useTenants()
 
   const handleDelete = (id: string) => {
     setInvoiceToDelete(id)
@@ -80,8 +82,13 @@ export function InvoicesListPage() {
       header: "Invoice Code",
     },
     {
-      accessorKey: "tenantId",
-      header: "Tenant ID",
+      id: "tenantName",
+      header: "Tenant",
+      cell: ({ row }) => {
+        const inv = row.original
+        const tenant = tenants.find((t) => t.id === inv.tenantId)
+        return tenant?.shopNameEn ?? inv.tenantId
+      },
     },
     {
       accessorKey: "issueDate",
@@ -121,6 +128,11 @@ export function InvoicesListPage() {
                 <Eye className="h-4 w-4" />
               </Button>
             </Link>
+                <Link href={`/invoices/${invoice.id}/print`} target="_blank" rel="noopener noreferrer">
+                  <Button variant="ghost" size="icon" title="Print">
+                    <Printer className="h-4 w-4" />
+                  </Button>
+                </Link>
             <Link href={`/invoices/${invoice.id}/edit`}>
               <Button variant="ghost" size="icon">
                 <Pencil className="h-4 w-4" />

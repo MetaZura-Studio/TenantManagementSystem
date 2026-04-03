@@ -41,11 +41,41 @@ export const baseSubscriptionSchema = z.object({
   notes: z.string().optional(),
 })
 
+export function buildSubscriptionSchema(args?: { required?: (field: string) => boolean }) {
+  const required = args?.required ?? (() => true)
+
+  const s = (field: string, message: string) =>
+    required(field) ? z.string().min(1, message) : z.string().optional().or(z.literal(""))
+
+  const n = (field: string, message: string) =>
+    required(field) ? z.number().min(0, message) : z.number().optional().default(0)
+
+  return z.object({
+    tenantId: s("tenantId", "Tenant is required"),
+    planId: s("planId", "Plan is required"),
+    status: required("status") ? subscriptionStatusEnum : subscriptionStatusEnum.or(z.literal("") as any),
+    startDate: s("startDate", "Start date is required"),
+    endDate: z.string().optional(),
+    currentPeriodStart: s("currentPeriodStart", "Current period start is required"),
+    currentPeriodEnd: s("currentPeriodEnd", "Current period end is required"),
+
+    billingCurrency: s("billingCurrency", "Billing currency is required"),
+    unitPrice: n("unitPrice", "Unit price must be non-negative"),
+    discountAmount: z.number().min(0, "Discount amount must be non-negative").default(0),
+    discountPercent: z.number().min(0, "Discount percent must be non-negative").default(0),
+    autoRenew: z.boolean().default(true),
+
+    cancelAtPeriodEnd: z.boolean().default(false),
+    canceledAt: z.string().optional(),
+    trialStart: z.string().optional(),
+    trialEnd: z.string().optional(),
+
+    notes: z.string().optional(),
+  })
+}
+
 // Schema used directly by Create/Edit subscription forms.
-// This intentionally excludes `subscriptionId` (system-generated / route identity).
-export const subscriptionSchema = baseSubscriptionSchema.omit({
-  subscriptionId: true,
-})
+export const subscriptionSchema = buildSubscriptionSchema()
 
 // CREATE schema
 export const createTenantSubscriptionSchema = baseSubscriptionSchema.omit({

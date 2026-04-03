@@ -1,4 +1,4 @@
-export type BillingCycle = "Monthly" | "Yearly"
+export type BillingCycle = "Monthly" | "Yearly" | "Both"
 export type PlanStatus = "Active" | "Inactive"
 
 export interface Plan {

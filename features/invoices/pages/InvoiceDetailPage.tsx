@@ -41,6 +41,7 @@ import type { Payment } from "@/features/payments/types"
 import { toast } from "@/components/shared/feedback/use-toast"
 import { useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/queryKeys"
+import { useTenants } from "@/features/tenants/hooks"
 
 interface InvoiceDetailPageProps {
   invoiceId: string
@@ -59,6 +60,7 @@ export function InvoiceDetailPage({ invoiceId }: InvoiceDetailPageProps) {
   const queryClient = useQueryClient()
   const { data: invoice, isLoading } = useInvoice(invoiceId)
   const { data: lines = [] } = useInvoiceLines(invoiceId)
+  const { data: tenants = [] } = useTenants()
   const createPaymentMutation = useCreatePayment()
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false)
 
@@ -163,6 +165,14 @@ export function InvoiceDetailPage({ invoiceId }: InvoiceDetailPageProps) {
                 <p className="text-sm text-muted-foreground">Invoice Number</p>
                 <p className="text-lg font-medium">{invoice.invoiceCode}</p>
               </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground">Tenant</p>
+                <p className="text-lg font-medium">
+                  {invoice.tenantId ? tenants.find((t) => t.id === invoice.tenantId)?.shopNameEn ?? invoice.tenantId : "—"}
+                </p>
+              </div>
+
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
                 <StatusBadge status={invoice.status} />

@@ -95,8 +95,16 @@ export function PlansListPage() {
       header: "Price",
       cell: ({ row }) => {
         const plan = row.original
-        const price = plan.billingCycle === "Yearly" ? plan.yearlyPrice : plan.monthlyPrice
-        return `${plan.currencyCode} ${Number(price ?? 0).toFixed(2)}`
+        const monthly = Number(plan.monthlyPrice ?? 0)
+        const yearly = Number(plan.yearlyPrice ?? 0)
+
+        if (plan.billingCycle === "Both") {
+          return `${plan.currencyCode} ${monthly.toFixed(2)}/mo • ${yearly.toFixed(2)}/yr`
+        }
+
+        const price = plan.billingCycle === "Yearly" ? yearly : monthly
+        const suffix = plan.billingCycle === "Yearly" ? "/yr" : "/mo"
+        return `${plan.currencyCode} ${Number(price ?? 0).toFixed(2)}${suffix}`
       },
     },
     {
@@ -186,6 +194,7 @@ export function PlansListPage() {
                   <SelectItem value="All">All</SelectItem>
                   <SelectItem value="Monthly">Monthly</SelectItem>
                   <SelectItem value="Yearly">Yearly</SelectItem>
+                <SelectItem value="Both">Both</SelectItem>
                 </SelectContent>
               </Select>
             </div>

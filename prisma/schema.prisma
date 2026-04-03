@@ -261,6 +261,8 @@ model tenants {
   state                   String?   @db.VarChar(100)
   zip_code                String?   @db.VarChar(30)
   country                 String?   @db.VarChar(100)
+  invoice_prefix         String?   @db.VarChar(20)
+  logo_url                String?   @db.VarChar(255)
   remarks                 String?   @db.Text
   status                  String    @db.VarChar(20)
   subscription_status     String    @db.VarChar(20)

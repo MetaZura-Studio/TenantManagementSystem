@@ -6,8 +6,10 @@ import type { Tenant } from "../types"
 export function useCreateTenant() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (tenant: Omit<Tenant, "id" | "createdAt" | "updatedAt">) =>
-      tenantsApi.create(tenant),
+    mutationFn: (payload: {
+      tenant: Omit<Tenant, "id" | "createdAt" | "updatedAt">
+      logoFile?: File | null
+    }) => tenantsApi.create(payload.tenant, payload.logoFile),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tenants.all })
     },

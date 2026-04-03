@@ -244,6 +244,23 @@ export function TenantDetailPage({ tenantId }: TenantDetailPageProps) {
                 <p className="text-sm text-muted-foreground">Tenant ID</p>
                 <p className="text-lg font-medium">{tenant.tenantCode}</p>
               </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Invoice Prefix</p>
+                <p className="text-lg font-medium">{tenant.invoicePrefix || "—"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Logo</p>
+                {tenant.logoUrl ? (
+                  // Using <img> here to keep dependencies minimal; images are small (logo).
+                  <img
+                    src={tenant.logoUrl}
+                    alt={`${tenant.shopNameEn} logo`}
+                    className="mt-2 h-10 w-10 rounded-md border border-border/50 object-contain bg-white"
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-2">—</p>
+                )}
+              </div>
             </div>
             <div className="space-y-3">
               <div>

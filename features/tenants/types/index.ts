@@ -18,6 +18,8 @@ export interface Tenant {
   zipCode: string
   country: string
   timezone: string
+  invoicePrefix?: string
+  logoUrl?: string
   subscriptionStatus: SubscriptionStatus
   subscriptionStartDate?: string
   subscriptionEndDate?: string
