@@ -65,12 +65,12 @@ export function ModernStatCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl p-[1px]",
+        "relative overflow-hidden rounded-2xl p-[1px] w-full min-h-[190px] h-full",
         t.glow,
         className
       )}
     >
-      <div className={cn("relative rounded-2xl p-6 text-white", t.bg)}>
+      <div className={cn("relative rounded-2xl p-6 text-white h-full flex flex-col justify-between", t.bg)}>
         <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-white/20 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
 

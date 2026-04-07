@@ -175,7 +175,20 @@ export function CurrencyListPage() {
       ) : (
         <GlassCard variant="default">
           <GlassCardContent className="p-0">
-            <DataTable columns={columns} data={currencies} />
+            <DataTable
+              columns={columns}
+              data={currencies}
+              search={{ columnId: "currencyCode", placeholder: "Search currencies..." }}
+              sort={{
+                options: [
+                  { label: "Currency Code", columnId: "currencyCode" },
+                  { label: "Currency Name", columnId: "currencyName" },
+                  { label: "Exchange Rate", columnId: "exchangeRate" },
+                ],
+                defaultColumnId: "currencyCode",
+                defaultDirection: "asc",
+              }}
+            />
           </GlassCardContent>
         </GlassCard>
       )}

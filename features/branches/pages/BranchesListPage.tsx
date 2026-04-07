@@ -229,7 +229,19 @@ export function BranchesListPage() {
       ) : (
         <GlassCard variant="default">
           <GlassCardContent className="p-0">
-            <DataTable columns={columns} data={filteredBranches} />
+            <DataTable
+              columns={columns}
+              data={filteredBranches}
+              sort={{
+                options: [
+                  { label: "Branch Name", columnId: "nameEn" },
+                  { label: "City", columnId: "city" },
+                  { label: "Status", columnId: "status" },
+                ],
+                defaultColumnId: "nameEn",
+                defaultDirection: "asc",
+              }}
+            />
           </GlassCardContent>
         </GlassCard>
       )}

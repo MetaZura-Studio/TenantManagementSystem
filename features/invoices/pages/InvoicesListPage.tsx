@@ -174,7 +174,21 @@ export function InvoicesListPage() {
       ) : (
         <GlassCard variant="default">
           <GlassCardContent className="p-0">
-            <DataTable columns={columns} data={invoices} />
+            <DataTable
+              columns={columns}
+              data={invoices}
+              search={{ columnId: "invoiceCode", placeholder: "Search invoices..." }}
+              sort={{
+                options: [
+                  { label: "Issue Date", columnId: "issueDate" },
+                  { label: "Due Date", columnId: "dueDate" },
+                  { label: "Invoice Code", columnId: "invoiceCode" },
+                  { label: "Total Amount", columnId: "totalAmount" },
+                ],
+                defaultColumnId: "issueDate",
+                defaultDirection: "desc",
+              }}
+            />
           </GlassCardContent>
         </GlassCard>
       )}

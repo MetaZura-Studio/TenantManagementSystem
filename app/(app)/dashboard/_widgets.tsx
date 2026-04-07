@@ -30,7 +30,11 @@ export function KpiNavCard({
               <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
             ) : null}
           </div>
-          <Button variant="ghost" size="icon" className="rounded-2xl">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-2xl bg-white/60 hover:bg-white/80 border border-border/20 transition-colors dark:bg-slate-950/45 dark:border-border/30 dark:hover:bg-slate-950/55"
+          >
             <MoreHorizontal className="h-5 w-5" />
           </Button>
         </div>
@@ -41,7 +45,7 @@ export function KpiNavCard({
             <Link
               key={it.href}
               href={it.href}
-              className="group flex items-center justify-between rounded-2xl border border-border/30 bg-white/50 px-4 py-3 hover:bg-white/70 transition-colors"
+              className="group flex items-center justify-between rounded-2xl border border-border/30 bg-white/55 px-4 py-3 transition-all duration-200 hover:bg-white/80 hover:border-primary/20 hover:shadow-sm group-hover:-translate-y-0.5 dark:bg-slate-950/30 dark:hover:bg-slate-950/55 dark:hover:border-primary/25"
             >
               <div className="min-w-0">
                 <div className="text-sm font-medium truncate">{it.label}</div>
@@ -128,7 +132,7 @@ export function DemographicCard({
           {normalized.map((r) => (
             <div
               key={r.label}
-              className="flex items-center gap-2 rounded-2xl border border-border/30 bg-white/50 px-3 py-2"
+              className="flex items-center gap-2 rounded-2xl border border-border/30 bg-white/50 px-3 py-2 dark:bg-slate-950/35 dark:border-border/40"
             >
               <span className={cn("h-2.5 w-2.5 rounded-full", r.color)} />
               <div className="text-xs text-muted-foreground truncate">{r.label}</div>
@@ -136,6 +140,72 @@ export function DemographicCard({
             </div>
           ))}
         </div>
+      </GlassCardContent>
+    </GlassCard>
+  )
+}
+
+export function TopPlansCard({
+  title = "Subscriptions",
+  subtitle = "Active subscriptions by plan",
+  rows,
+  total,
+}: {
+  title?: string
+  subtitle?: string
+  rows: Array<{ name: string; count: number }>
+  total: number
+}) {
+  const safeTotal = Number.isFinite(total) && total > 0 ? total : 0
+  return (
+    <GlassCard variant="elevated" className="rounded-3xl overflow-hidden">
+      <GlassCardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <div>
+            <GlassCardTitle className="text-lg">{title}</GlassCardTitle>
+            {subtitle ? <p className="text-xs text-muted-foreground mt-1">{subtitle}</p> : null}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-2xl bg-white/60 hover:bg-white/80 border border-border/20 transition-colors dark:bg-slate-950/45 dark:border-border/30 dark:hover:bg-slate-950/55"
+          >
+            <MoreHorizontal className="h-5 w-5" />
+          </Button>
+        </div>
+      </GlassCardHeader>
+      <GlassCardContent className="pt-2 space-y-3">
+        {rows.length === 0 ? (
+          <div className="text-sm text-muted-foreground px-2 py-6 text-center">
+            No active subscriptions yet.
+          </div>
+        ) : (
+          rows.slice(0, 6).map((r) => {
+            const pct = safeTotal ? Math.min(100, (r.count / safeTotal) * 100) : 0
+            return (
+              <div
+                key={r.name}
+                className="rounded-2xl border border-border/30 bg-white/55 px-3 py-3 transition-all duration-200 hover:bg-white/75 hover:border-primary/20 hover:shadow-sm dark:bg-slate-950/25 dark:border-border/40 dark:hover:bg-slate-950/45 dark:hover:border-primary/25"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold truncate">{r.name}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {safeTotal ? `${pct.toFixed(0)}% of active` : "—"}
+                    </div>
+                  </div>
+                  <div className="text-sm font-semibold">{r.count}</div>
+                </div>
+                <div className="mt-2 h-2 rounded-full bg-muted/40 dark:bg-muted/60 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-500"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            )
+          })
+        )}
       </GlassCardContent>
     </GlassCard>
   )
@@ -169,7 +239,7 @@ export function ChatRequestCard({
             items.map((it, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-3 rounded-2xl border border-border/30 bg-white/55 px-3 py-3"
+                className="flex items-center gap-3 rounded-2xl border border-border/30 bg-white/55 px-3 py-3 dark:bg-slate-950/35 dark:border-border/40"
               >
                 <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 text-white flex items-center justify-center font-semibold">
                   {it.name.slice(0, 1)}
@@ -189,14 +259,14 @@ export function ChatRequestCard({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-2xl hover:bg-white/70"
+                    className="rounded-2xl hover:bg-white/70 dark:hover:bg-slate-950/50"
                   >
                     <Phone className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-2xl hover:bg-white/70"
+                    className="rounded-2xl hover:bg-white/70 dark:hover:bg-slate-950/50"
                   >
                     <Send className="h-4 w-4" />
                   </Button>

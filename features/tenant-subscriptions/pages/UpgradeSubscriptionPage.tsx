@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
@@ -8,7 +8,19 @@ import { PageHeader } from "@/components/shared/page-header"
 import { Pricing, type PricingPlanCard } from "../components"
 import { usePlans } from "@/features/plans/hooks"
 import { useTenants } from "@/features/tenants/hooks"
-import { useSubscriptions } from "../hooks"
+import { useSubscriptions, useUpdateSubscription } from "../hooks"
+import { toast } from "@/components/shared/feedback/use-toast"
+import { ConfirmDialog } from "@/components/shared/feedback"
+
+function addDaysIso(days: number) {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10)
+}
 
 export function UpgradeSubscriptionPage() {
   const router = useRouter()
@@ -18,6 +30,12 @@ export function UpgradeSubscriptionPage() {
   const { data: subscriptions = [], isLoading: subsLoading } = useSubscriptions()
   const { data: tenants = [], isLoading: tenantsLoading } = useTenants()
   const { data: plans = [], isLoading: plansLoading } = usePlans()
+  const updateMutation = useUpdateSubscription()
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingUpgrade, setPendingUpgrade] = useState<{
+    planId: string
+    billing: "monthly" | "yearly"
+  } | null>(null)
 
   const subscription = useMemo(() => {
     if (!subscriptionId) return undefined
@@ -67,13 +85,60 @@ export function UpgradeSubscriptionPage() {
       })
   }, [plans])
 
-  const onSelectPlan = (planId: string) => {
-    if (!subscription?.tenantId) return
+  const onSelectPlan = (planId: string, billing: "monthly" | "yearly") => {
+    if (!subscription) return
     if (subscription.planId && String(planId) === String(subscription.planId)) return
-    router.push(
-      `/tenant-subscriptions/new?tenantId=${encodeURIComponent(subscription.tenantId)}&planId=${encodeURIComponent(
-        planId
-      )}&upgradeFrom=${encodeURIComponent(subscription.id)}`
+    if (updateMutation.isPending) return
+
+    setPendingUpgrade({ planId, billing })
+    setConfirmOpen(true)
+  }
+
+  const confirmUpgrade = () => {
+    if (!subscription || !pendingUpgrade) return
+
+    const { planId, billing } = pendingUpgrade
+    const nextPlan = plans.find((p) => String(p.id) === String(planId))
+    if (!nextPlan) return
+
+    const isoStart = todayIso()
+    const isoEnd = billing === "yearly" ? addDaysIso(365) : addDaysIso(30)
+    const unitPrice =
+      billing === "yearly"
+        ? Number((nextPlan as any).yearlyPrice ?? 0)
+        : Number((nextPlan as any).monthlyPrice ?? 0)
+
+    updateMutation.mutate(
+      {
+        id: subscription.id,
+        updates: {
+          planId: String(nextPlan.id),
+          billingCurrency: String(
+            (nextPlan as any).currencyCode ?? subscription.billingCurrency ?? "USD"
+          ),
+          unitPrice,
+          currentPeriodStart: isoStart,
+          currentPeriodEnd: isoEnd,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Upgraded",
+            description: "Subscription upgraded successfully.",
+          })
+          setConfirmOpen(false)
+          setPendingUpgrade(null)
+          router.push("/tenant-subscriptions")
+        },
+        onError: (err: any) => {
+          toast({
+            title: "Upgrade failed",
+            description: err?.message ?? "Failed to upgrade subscription",
+            variant: "destructive",
+          })
+        },
+      }
     )
   }
 
@@ -147,6 +212,19 @@ export function UpgradeSubscriptionPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          setConfirmOpen(open)
+          if (!open) setPendingUpgrade(null)
+        }}
+        title="Confirm upgrade"
+        description="Are you sure you want to upgrade this subscription? This will update the existing Subscription ID."
+        onConfirm={confirmUpgrade}
+        confirmLabel={updateMutation.isPending ? "Upgrading..." : "Upgrade"}
+        cancelLabel="Cancel"
+      />
     </>
   )
 }

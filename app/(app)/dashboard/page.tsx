@@ -2,7 +2,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { StatCard } from "@/components/shared/cards"
 import { Building2, CreditCard, DollarSign, FileText } from "lucide-react"
 import { prisma } from "@/lib/server/prisma"
-import { ChatRequestCard, DemographicCard, KpiNavCard } from "./_widgets"
+import { ChatRequestCard, KpiNavCard, TopPlansCard } from "./_widgets"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -11,39 +11,6 @@ function monthRangeUtc(now = new Date()) {
   const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0))
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0))
   return { start, end }
-}
-
-function countryToLonLat(country: string): { lon: number; lat: number } | null {
-  const c = (country || "").trim().toLowerCase()
-  // Minimal centroid map for common countries. Extend as your tenant base grows.
-  const m: Record<string, { lon: number; lat: number }> = {
-    pakistan: { lon: 69.3451, lat: 30.3753 },
-    "united arab emirates": { lon: 54.3773, lat: 24.4539 },
-    uae: { lon: 54.3773, lat: 24.4539 },
-    kuwait: { lon: 47.4818, lat: 29.3117 },
-    "saudi arabia": { lon: 45.0792, lat: 23.8859 },
-    india: { lon: 78.9629, lat: 20.5937 },
-    "united states": { lon: -98.5795, lat: 39.8283 },
-    usa: { lon: -98.5795, lat: 39.8283 },
-    canada: { lon: -106.3468, lat: 56.1304 },
-    "united kingdom": { lon: -3.436, lat: 55.3781 },
-    uk: { lon: -3.436, lat: 55.3781 },
-    germany: { lon: 10.4515, lat: 51.1657 },
-    france: { lon: 2.2137, lat: 46.2276 },
-    china: { lon: 104.1954, lat: 35.8617 },
-    indonesia: { lon: 113.9213, lat: -0.7893 },
-    brazil: { lon: -51.9253, lat: -14.235 },
-    nigeria: { lon: 8.6753, lat: 9.082 },
-    kenya: { lon: 37.9062, lat: -0.0236 },
-  }
-  return m[c] || null
-}
-
-function projectLonLatToMapXY(lon: number, lat: number) {
-  // Equirectangular projection to our SVG viewBox (640x320)
-  const x = ((lon + 180) / 360) * 640
-  const y = ((90 - lat) / 180) * 320
-  return { x, y }
 }
 
 export default async function DashboardPage() {
@@ -55,7 +22,6 @@ export default async function DashboardPage() {
     totalUsers,
     pendingInvoices,
     revenueAgg,
-    tenantsByCountry,
     paymentsSuccess30d,
     paymentsTotal30d,
     invoicesDueCount,
@@ -88,13 +54,6 @@ export default async function DashboardPage() {
           { transaction_date: { gte: start, lt: end } },
         ],
       },
-    }),
-    prisma.tenants.groupBy({
-      by: ["country"],
-      where: { deleted_at: null, country: { not: null } },
-      _count: { country: true },
-      orderBy: { _count: { country: "desc" } },
-      take: 4,
     }),
     prisma.payments.count({
       where: {
@@ -158,20 +117,6 @@ export default async function DashboardPage() {
   ])
 
   const totalRevenue = Number(revenueAgg._sum.amount ?? 0)
-  const demographicRows = (tenantsByCountry as any[]).map((r) => ({
-    label: String(r.country || "Unknown"),
-    value: Number(r._count?.country ?? 0),
-  }))
-
-  const pinPalette = ["#2563eb", "#10b981", "#f97316", "#a855f7"] as const
-  const demographicPins = demographicRows
-    .map((r, i) => {
-      const ll = countryToLonLat(r.label)
-      if (!ll) return null
-      const { x, y } = projectLonLatToMapXY(ll.lon, ll.lat)
-      return { label: r.label, x, y, color: pinPalette[i % pinPalette.length] }
-    })
-    .filter(Boolean) as Array<{ label: string; x: number; y: number; color: string }>
 
   const paymentsSuccessRate =
     paymentsTotal30d > 0 ? (paymentsSuccess30d / paymentsTotal30d) * 100 : 0
@@ -217,7 +162,7 @@ export default async function DashboardPage() {
         subtitle="Overview of your tenant management system"
         breadcrumbs={[{ label: "Dashboard" }]}
       />
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 items-stretch">
         <StatCard
           title="Total Tenants"
           value={String(totalTenants)}
@@ -248,45 +193,51 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-7 grid gap-6">
-          <KpiNavCard
-            title="Tenants & Users"
-            subtitle="Quick navigation"
-            items={[
-              { label: "Tenants", value: String(totalTenants), href: "/tenants" },
-              { label: "Users", value: String(totalUsers), href: "/users" },
-              { label: "Branches", value: "View", href: "/branches", hint: "Manage tenant branches" },
-            ]}
-          />
-          <KpiNavCard
-            title="Invoices & Payments"
-            subtitle="Last 30 days and outstanding"
-            items={[
-              { label: "Invoices (due)", value: String(invoicesDueCount), href: "/invoices", hint: `Amount due: ${dueAmount.toFixed(2)}` },
-              { label: "Payments (success rate)", value: `${paymentsSuccessRate.toFixed(1)}%`, href: "/payments", hint: `Success: ${paymentsSuccess30d}/${paymentsTotal30d}` },
-              { label: "Revenue (this month)", value: `$${totalRevenue.toFixed(2)}`, href: "/payments" },
-            ]}
-          />
-          <KpiNavCard
-            title="Plans & Subscriptions"
-            subtitle="Active subscriptions by plan"
-            items={[
-              { label: "Plans", value: "View", href: "/plans" },
-              { label: "Subscriptions", value: String(activeSubscriptions), href: "/tenant-subscriptions" },
-              ...(topPlans.slice(0, 3).map((p) => ({
-                label: p.name,
-                value: String(p.count),
-                href: "/tenant-subscriptions",
-                hint: "Active subscriptions",
-              })) as any),
-            ]}
-          />
-        </div>
-        <div className="lg:col-span-5">
-          <DemographicCard rows={demographicRows} pins={demographicPins} />
-        </div>
-        <div className="lg:col-span-5">
+      <div className="mt-8 grid gap-6 grid-cols-1 lg:grid-cols-2">
+        <KpiNavCard
+          title="Tenants & Users"
+          subtitle="Quick navigation"
+          items={[
+            { label: "Tenants", value: String(totalTenants), href: "/tenants" },
+            { label: "Users", value: String(totalUsers), href: "/users" },
+            { label: "Branches", value: "View", href: "/branches", hint: "Manage tenant branches" },
+          ]}
+        />
+        <KpiNavCard
+          title="Invoices & Payments"
+          subtitle="Last 30 days and outstanding"
+          items={[
+            {
+              label: "Invoices (due)",
+              value: String(invoicesDueCount),
+              href: "/invoices",
+              hint: `Amount due: ${dueAmount.toFixed(2)}`,
+            },
+            {
+              label: "Payments (success rate)",
+              value: `${paymentsSuccessRate.toFixed(1)}%`,
+              href: "/payments",
+              hint: `Success: ${paymentsSuccess30d}/${paymentsTotal30d}`,
+            },
+            { label: "Revenue (this month)", value: `$${totalRevenue.toFixed(2)}`, href: "/payments" },
+          ]}
+        />
+        <KpiNavCard
+          title="Plans & Subscriptions"
+          subtitle="Active subscriptions by plan"
+          items={[
+            { label: "Plans", value: "View", href: "/plans" },
+            { label: "Subscriptions", value: String(activeSubscriptions), href: "/tenant-subscriptions" },
+            ...(topPlans.slice(0, 3).map((p) => ({
+              label: p.name,
+              value: String(p.count),
+              href: "/tenant-subscriptions",
+              hint: "Active subscriptions",
+            })) as any),
+          ]}
+        />
+        <TopPlansCard rows={topPlans} total={activeSubscriptions} />
+        <div className="lg:col-span-2">
           <ChatRequestCard title="Recent Activity" items={[...auditItems, ...activityItems].slice(0, 6)} />
         </div>
       </div>

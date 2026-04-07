@@ -290,7 +290,21 @@ export function PaymentsListPage() {
       ) : (
         <GlassCard variant="default">
           <GlassCardContent className="p-0">
-            <DataTable columns={columns} data={payments} />
+            <DataTable
+              columns={columns}
+              data={payments}
+              search={{ columnId: "paymentCode", placeholder: "Search payments..." }}
+              sort={{
+                options: [
+                  { label: "Payment Date", columnId: "transactionDate" },
+                  { label: "Amount", columnId: "amount" },
+                  { label: "Status", columnId: "status" },
+                  { label: "Payment ID", columnId: "paymentCode" },
+                ],
+                defaultColumnId: "transactionDate",
+                defaultDirection: "desc",
+              }}
+            />
           </GlassCardContent>
         </GlassCard>
       )}

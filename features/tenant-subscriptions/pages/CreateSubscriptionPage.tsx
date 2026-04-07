@@ -160,7 +160,7 @@ export function CreateSubscriptionPage() {
     })
   }, [plans])
 
-  const handleSelectPlan = (planId: string) => {
+  const handleSelectPlan = (planId: string, _billing: "monthly" | "yearly") => {
     setSelectedPlanId(planId)
     const plan = plans.find((p) => p.id === planId)
     if (!plan) return

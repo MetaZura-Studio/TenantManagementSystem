@@ -209,7 +209,19 @@ export function TenantsListPage() {
       ) : (
         <GlassCard variant="default">
           <GlassCardContent className="p-0">
-            <DataTable columns={columns} data={filteredTenants} />
+            <DataTable
+              columns={columns}
+              data={filteredTenants}
+              sort={{
+                options: [
+                  { label: "Shop Name (EN)", columnId: "shopNameEn" },
+                  { label: "Tenant Code", columnId: "tenantCode" },
+                  { label: "Subscription Status", columnId: "subscriptionStatus" },
+                ],
+                defaultColumnId: "shopNameEn",
+                defaultDirection: "asc",
+              }}
+            />
           </GlassCardContent>
         </GlassCard>
       )}

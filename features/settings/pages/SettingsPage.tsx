@@ -94,7 +94,7 @@ export function SettingsPage() {
           </GlassCardHeader>
           <GlassCardContent>
             <Tabs defaultValue={defaultCategory} className="w-full">
-              <div className="rounded-2xl border border-border/30 bg-white/50 p-2 overflow-x-auto">
+              <div className="rounded-2xl border border-border/30 bg-white/50 p-2 overflow-x-auto dark:bg-slate-950/40 dark:border-border/40">
                 <TabsList className="w-max min-w-full bg-transparent p-0 h-auto justify-start rounded-none gap-1">
                   {categories.map((category) => (
                     <TabsTrigger
@@ -111,7 +111,7 @@ export function SettingsPage() {
                 </TabsList>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-border/30 bg-white/55 p-6">
+              <div className="mt-6 rounded-2xl border border-border/30 bg-white/55 p-6 dark:bg-slate-950/40 dark:border-border/40">
                 {categories.map((category) => {
                   const categorySettings = settings.filter((s) => s.category === category)
 
@@ -165,7 +165,10 @@ export function SettingsPage() {
                             type === "boolean"
 
                           return (
-                            <div key={setting.key} className="rounded-2xl border border-border/30 bg-white/70 p-4">
+                            <div
+                              key={setting.key}
+                              className="rounded-2xl border border-border/30 bg-white/70 p-4 dark:bg-slate-950/45 dark:border-border/40"
+                            >
                               <div className="flex items-start justify-between gap-4">
                                 <div className="space-y-1">
                                   <Label htmlFor={setting.key} className="text-sm font-semibold">

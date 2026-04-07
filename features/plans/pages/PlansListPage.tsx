@@ -211,7 +211,19 @@ export function PlansListPage() {
       ) : (
         <GlassCard variant="default">
           <GlassCardContent className="p-0">
-            <DataTable columns={columns} data={filteredPlans} />
+            <DataTable
+              columns={columns}
+              data={filteredPlans}
+              sort={{
+                options: [
+                  { label: "Plan Name", columnId: "nameEn" },
+                  { label: "Plan Code", columnId: "planCode" },
+                  { label: "Billing Cycle", columnId: "billingCycle" },
+                ],
+                defaultColumnId: "nameEn",
+                defaultDirection: "asc",
+              }}
+            />
           </GlassCardContent>
         </GlassCard>
       )}

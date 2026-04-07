@@ -71,6 +71,10 @@ export function SubscriptionsListPage() {
     {
       id: "tenant",
       header: "Tenant",
+      accessorFn: (row) => {
+        const tenant = tenants.find((t) => t.id === row.tenantId)
+        return tenant?.shopNameEn || tenant?.tenantCode || row.tenantId
+      },
       cell: ({ row }) => {
         const sub = row.original
         const tenant = tenants.find((t) => t.id === sub.tenantId)
@@ -170,7 +174,22 @@ export function SubscriptionsListPage() {
       ) : (
         <GlassCard variant="default">
           <GlassCardContent className="p-0">
-            <DataTable columns={columns} data={subscriptions} />
+            <DataTable
+              columns={columns}
+              data={subscriptions}
+              search={{ columnId: "subscriptionId", placeholder: "Search subscriptions..." }}
+              sort={{
+                options: [
+                  { label: "Tenant", columnId: "tenant" },
+                  { label: "Start Date", columnId: "startDate" },
+                  { label: "Period End", columnId: "currentPeriodEnd" },
+                  { label: "Status", columnId: "status" },
+                  { label: "Subscription ID", columnId: "subscriptionId" },
+                ],
+                defaultColumnId: "startDate",
+                defaultDirection: "desc",
+              }}
+            />
           </GlassCardContent>
         </GlassCard>
       )}

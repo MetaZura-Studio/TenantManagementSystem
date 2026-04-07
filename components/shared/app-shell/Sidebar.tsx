@@ -1,7 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
   ChevronDown,
@@ -9,18 +11,54 @@ import {
   Menu,
   X,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import type { ReactNode } from "react"
 import { navItems, type NavItem } from "./NavItems"
+import { useSession } from "@/lib/auth/useSession"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { logout } from "@/lib/auth/session"
-import { useRouter } from "next/navigation"
 
 function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed?: boolean }) {
   const pathname = usePathname()
+
+  const normalize = (p: string) => p.replace(/\/+$/, "") || "/"
+  const matchesHref = (href?: string) => {
+    if (!href) return false
+    const p = normalize(pathname)
+    const h = normalize(href)
+    if (h === "/") return p === "/"
+    return p === h || p.startsWith(`${h}/`)
+  }
+
+  const hasActiveChild = item.children?.some((child) => matchesHref(child.href)) || false
   const [isOpen, setIsOpen] = useState(
-    item.children?.some((child) => pathname === child.href) || false
+    hasActiveChild
   )
 
-  const isActive = pathname === item.href || item.children?.some((child) => pathname === child.href)
+  const isActive = matchesHref(item.href) || hasActiveChild
+
+  const IconTile = ({ children }: { children: ReactNode }) => (
+    <div
+      className={cn(
+        "flex items-center justify-center rounded-2xl border border-border/25 bg-white/70 dark:bg-slate-950/55",
+        isCollapsed ? "h-10 w-10" : "h-9 w-9",
+        isActive && "bg-primary/15 border-primary/25 shadow-sm"
+      )}
+    >
+      {children}
+    </div>
+  )
+
+  useEffect(() => {
+    if (hasActiveChild) setIsOpen(true)
+  }, [hasActiveChild])
 
   if (item.children) {
     return (
@@ -28,36 +66,50 @@ function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed?: 
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-muted/50",
-            isActive && "bg-primary/10 text-primary"
+            "flex w-full items-center justify-between rounded-2xl text-[13px] font-medium transition-all duration-200 border border-transparent",
+            isActive && "bg-primary/10 text-primary border-primary/20",
+            isCollapsed
+              ? "justify-center px-0 py-2.5 hover:bg-primary/5 dark:hover:bg-primary/10"
+              : "px-3 py-2.5 hover:bg-primary/5 dark:hover:bg-primary/10 hover:border-primary/20 dark:hover:border-primary/20"
           )}
         >
-          <div className="flex items-center space-x-3">
-            <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-primary")} />
-            {!isCollapsed && <span>{item.title}</span>}
+          <div className={cn("flex items-center", isCollapsed ? "justify-center w-full" : "space-x-3")}>
+            <IconTile>
+              <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-primary")} />
+            </IconTile>
+            {!isCollapsed ? <span className="truncate">{item.title}</span> : null}
           </div>
           {!isCollapsed && (
             isOpen ? (
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
             ) : (
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
             )
           )}
         </button>
         {isOpen && !isCollapsed && (
-          <div className="ml-4 mt-1 space-y-1">
+          <div className="ml-4 mt-1 space-y-1 pl-2 border-l border-border/20">
             {item.children.map((child) => {
-              const childIsActive = pathname === child.href
+              const childIsActive = matchesHref(child.href)
               return (
                 <Link
                   key={child.href}
                   href={child.href!}
                   className={cn(
-                    "flex items-center space-x-3 rounded-xl px-3 py-2 text-sm transition-all duration-200 hover:bg-muted/50",
-                    childIsActive && "bg-primary/10 text-primary font-medium"
+                    "flex items-center space-x-3 rounded-2xl px-3 py-2 text-[13px] transition-all duration-200 border border-transparent hover:bg-primary/5 dark:hover:bg-primary/10 hover:border-primary/20 dark:hover:border-primary/20",
+                    childIsActive && "bg-primary/10 text-primary font-medium border-primary/20"
                   )}
                 >
-                  <child.icon className="h-4 w-4 flex-shrink-0" />
+                  <div
+                    className={cn(
+                      "flex items-center justify-center rounded-2xl border border-border/25 bg-white/70 dark:bg-slate-950/55 h-8 w-8",
+                      childIsActive && "bg-primary/15 border-primary/25 shadow-sm"
+                    )}
+                  >
+                    <child.icon
+                      className={cn("h-4 w-4 flex-shrink-0", childIsActive && "text-primary")}
+                    />
+                  </div>
                   <span>{child.title}</span>
                 </Link>
               )
@@ -72,15 +124,18 @@ function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed?: 
     <Link
       href={item.href!}
       className={cn(
-        "flex items-center space-x-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-muted/50 relative group",
-        isActive && "bg-primary/10 text-primary"
+        "relative group flex items-center rounded-2xl text-[13px] font-medium transition-all duration-200 border border-transparent hover:border-primary/20 dark:hover:border-primary/20",
+        isCollapsed ? "justify-center px-0 py-2.5 hover:bg-primary/5 dark:hover:bg-primary/10" : "space-x-3 px-3 py-2.5 hover:bg-primary/5 dark:hover:bg-primary/10",
+        isActive && "bg-primary/10 text-primary border-primary/20"
       )}
     >
-      {isActive && (
+      {isActive && !isCollapsed ? (
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
-      )}
-      <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-primary")} />
-      {!isCollapsed && <span>{item.title}</span>}
+      ) : null}
+      <IconTile>
+        <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-primary")} />
+      </IconTile>
+      {!isCollapsed ? <span className="truncate">{item.title}</span> : null}
     </Link>
   )
 }
@@ -88,33 +143,56 @@ function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed?: 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const router = useRouter()
+  const { session } = useSession()
+  const [logoError, setLogoError] = useState(false)
 
   async function onLogout() {
     await logout()
     router.replace("/login")
   }
 
+  const initials = session?.user?.name
+    ? session.user.name
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((p) => p[0]?.toUpperCase())
+        .join("")
+    : "A"
+
   return (
     <aside
-      style={{ width: isCollapsed ? 80 : 256 }}
-      className="relative z-10 flex h-full flex-col transition-all duration-300 flex-shrink-0 p-4"
+      style={{ width: isCollapsed ? 72 : 280 }}
+      className="relative z-10 flex h-full flex-col transition-all duration-300 flex-shrink-0 p-3"
     >
-      <div className="flex h-full flex-col rounded-3xl border border-border/30 bg-white/70 backdrop-blur-xl shadow-sm overflow-hidden">
+      <div className="flex h-full flex-col rounded-3xl border border-border/25 bg-white/70 dark:bg-slate-950/65 backdrop-blur-xl shadow-sm overflow-hidden">
         <div className="flex h-16 items-center justify-between px-5">
           {!isCollapsed && (
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold">
-                A
+              <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold overflow-hidden">
+                {!logoError ? (
+                  <Image
+                    src="/logo-mark.svg"
+                    alt="Logo"
+                    width={36}
+                    height={36}
+                    className="h-9 w-9 object-contain"
+                    onError={() => setLogoError(true)}
+                    priority
+                  />
+                ) : (
+                  initials
+                )}
               </div>
               <div className="leading-tight">
-                <div className="text-sm font-semibold">Admin Portal</div>
-                <div className="text-[11px] text-muted-foreground">Tenant Management</div>
+                <div className="text-sm font-semibold">Dishdasha Management System</div>
+                <div className="text-[11px] text-muted-foreground">Admin Portal</div>
               </div>
             </div>
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-2xl hover:bg-muted/40 transition-colors"
+            className="p-2 rounded-2xl hover:bg-muted/50 transition-colors bg-white/40 dark:bg-slate-950/30"
             aria-label="Toggle sidebar"
           >
             {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
@@ -135,21 +213,56 @@ export function Sidebar() {
         </div>
 
         <div className="border-t border-border/30 p-3">
-          {!isCollapsed && (
-            <div className="px-2 pb-2 text-[11px] font-semibold text-muted-foreground/80">
-              SUPPORT
-            </div>
-          )}
-          <button
-            onClick={onLogout}
-            className={cn(
-              "flex w-full items-center space-x-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-muted/50",
-              "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <span className="h-5 w-5 flex items-center justify-center">⎋</span>
-            {!isCollapsed && <span>Logout</span>}
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  "rounded-2xl border border-border/20 bg-white/55 dark:bg-slate-950/60 px-3 py-3 flex items-center gap-3 w-full",
+                  isCollapsed && "justify-center flex-col gap-1 px-2 py-2"
+                )}
+                aria-label="Open account menu"
+              >
+                <div
+                  className={cn(
+                    "h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold",
+                    isCollapsed && "h-11 w-11"
+                  )}
+                  aria-hidden
+                >
+                  {initials}
+                </div>
+
+                {!isCollapsed ? (
+                  <div className="min-w-0 flex-1 text-left">
+                    <div className="text-sm font-semibold truncate">{session?.user?.name || "Admin User"}</div>
+                    <div className="text-[11px] text-muted-foreground truncate">{session?.user?.email || "admin@example.com"}</div>
+                  </div>
+                ) : null}
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              align="end"
+              className="w-56 rounded-2xl border-border/30 bg-white/90 backdrop-blur-xl dark:border-border/40 dark:bg-slate-950/80"
+            >
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem className="rounded-lg" asChild>
+                <Link href="/profile">Profile</Link>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                className="rounded-lg text-destructive"
+                onClick={onLogout}
+              >
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </aside>

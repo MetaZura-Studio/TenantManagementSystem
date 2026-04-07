@@ -121,7 +121,19 @@ export function RolesListPage() {
       ) : (
         <GlassCard variant="default">
           <GlassCardContent className="p-0">
-            <DataTable columns={columns} data={roles} />
+            <DataTable
+              columns={columns}
+              data={roles}
+              search={{ columnId: "roleName", placeholder: "Search roles..." }}
+              sort={{
+                options: [
+                  { label: "Role Name", columnId: "roleName" },
+                  { label: "Description", columnId: "description" },
+                ],
+                defaultColumnId: "roleName",
+                defaultDirection: "asc",
+              }}
+            />
           </GlassCardContent>
         </GlassCard>
       )}

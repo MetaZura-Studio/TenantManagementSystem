@@ -158,7 +158,20 @@ export function UsersListPage() {
       ) : (
         <GlassCard variant="default">
           <GlassCardContent className="p-0">
-            <DataTable columns={columns} data={users} />
+            <DataTable
+              columns={columns}
+              data={users}
+              search={{ columnId: "username", placeholder: "Search users..." }}
+              sort={{
+                options: [
+                  { label: "Username", columnId: "username" },
+                  { label: "Email", columnId: "email" },
+                  { label: "Status", columnId: "status" },
+                ],
+                defaultColumnId: "username",
+                defaultDirection: "asc",
+              }}
+            />
           </GlassCardContent>
         </GlassCard>
       )}
