@@ -72,7 +72,7 @@ export function CreatePlanPage() {
   const needsMonthly = billingCycle === "Monthly" || billingCycle === "Both"
   const needsYearly = billingCycle === "Yearly" || billingCycle === "Both"
 
-  const onSubmit = (data: z.infer<typeof planSchema>) => {
+  const onSubmit = (data: z.infer<typeof schema>) => {
     const planData: Omit<Plan, "id" | "createdAt" | "updatedAt"> = {
       planCode: data.planCode,
       nameEn: data.nameEn,
