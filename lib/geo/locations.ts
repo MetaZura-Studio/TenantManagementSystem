@@ -60,7 +60,7 @@ export function getCitiesByCountryAndStateName(
 export function getCitiesByCountryName(countryName: string | null | undefined): LocationOption[] {
   const countryIso = findCountryIsoByName(countryName)
   if (!countryIso) return []
-  return City.getCitiesOfCountry(countryIso)
+  return (City.getCitiesOfCountry(countryIso) ?? [])
     .map((c) => c.name)
     .sort((a, b) => a.localeCompare(b))
     .map(toOption)

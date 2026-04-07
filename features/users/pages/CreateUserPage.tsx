@@ -84,19 +84,19 @@ export function CreateUserPage() {
     const userData: Omit<User, "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy"> & {
       password: string
     } = {
-      tenantId: data.tenantId,
+      tenantId: data.tenantId || "",
       branchId: data.branchId === MAIN_BRANCH_VALUE ? undefined : (data.branchId || undefined),
-      roleId: data.roleId,
-      fullNameEn: data.fullNameEn,
-      fullNameAr: data.fullNameAr,
-      username: data.username,
-      email: data.email,
-      mobile: data.mobile,
+      roleId: data.roleId || "",
+      fullNameEn: data.fullNameEn || "",
+      fullNameAr: data.fullNameAr || "",
+      username: data.username || "",
+      email: data.email || "",
+      mobile: data.mobile || "",
       password: data.password || "",
       status: "ACTIVE", // Default to ACTIVE for new users
-      address: data.address,
-      zipCode: data.zipCode,
-      country: data.country,
+      address: data.address || "",
+      zipCode: data.zipCode || "",
+      country: data.country || "",
     }
     createMutation.mutate(userData, {
       onSuccess: () => {

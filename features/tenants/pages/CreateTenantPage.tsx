@@ -100,27 +100,28 @@ export function CreateTenantPage() {
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     // Generate slug from shopNameEn
-    const baseSlug = generateSlug(data.shopNameEn)
+    const slugSource = (data.shopNameEn || data.shopNameAr || data.tenantCode || "").trim()
+    const baseSlug = generateSlug(slugSource || `tenant-${Date.now().toString().slice(-6)}`)
     const existingSlugs = existingTenants.map((t) => t.slug)
     const uniqueSlug = ensureUniqueSlug(baseSlug, existingSlugs)
 
     const tenantData: Omit<Tenant, "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy"> = {
-      tenantCode: data.tenantCode,
+      tenantCode: data.tenantCode ?? `T${Date.now().toString().slice(-6)}`,
       slug: uniqueSlug, // Auto-generated slug
-      shopNameEn: data.shopNameEn,
-      shopNameAr: data.shopNameAr,
-      ownerName: data.ownerName,
-      ownerEmail: data.ownerEmail,
-      ownerMobile: data.ownerMobile,
-      tenantType: data.tenantType,
-      contactPerson: data.contactPerson,
-      address: data.address,
-      city: data.city,
-      zipCode: data.zipCode,
-      country: data.country,
+      shopNameEn: data.shopNameEn ?? "",
+      shopNameAr: data.shopNameAr ?? "",
+      ownerName: data.ownerName ?? "",
+      ownerEmail: data.ownerEmail ?? "",
+      ownerMobile: data.ownerMobile ?? "",
+      tenantType: (data.tenantType || "Individual") as Tenant["tenantType"],
+      contactPerson: data.contactPerson ?? "",
+      address: data.address ?? "",
+      city: data.city ?? "",
+      zipCode: data.zipCode ?? "",
+      country: data.country ?? "",
       invoicePrefix: data.invoicePrefix,
-      timezone: data.timezone,
-      subscriptionStatus: data.subscriptionStatus,
+      timezone: data.timezone ?? "UTC",
+      subscriptionStatus: (data.subscriptionStatus || "TRIAL") as Tenant["subscriptionStatus"],
       subscriptionStartDate: data.subscriptionStartDate,
       subscriptionEndDate: data.subscriptionEndDate,
     }

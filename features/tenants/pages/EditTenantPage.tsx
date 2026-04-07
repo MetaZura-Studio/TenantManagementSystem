@@ -116,8 +116,16 @@ export function EditTenantPage({ tenantId }: EditTenantPageProps) {
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     const { logo, ...rest } = data
+
+    // When a field is configured as "not required" by the settings matrix, our schema allows "".
+    // The API/update payload expects either a valid enum value or undefined.
+    const updates = {
+      ...rest,
+      tenantType: rest.tenantType || undefined,
+      subscriptionStatus: rest.subscriptionStatus || undefined,
+    }
     updateMutation.mutate(
-      { id: tenantId, updates: rest, logoFile: logo ?? null },
+      { id: tenantId, updates, logoFile: logo ?? null },
       {
         onSuccess: () => {
           toast({

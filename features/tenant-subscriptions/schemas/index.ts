@@ -51,16 +51,20 @@ export function buildSubscriptionSchema(args?: { required?: (field: string) => b
     required(field) ? z.number().min(0, message) : z.number().optional().default(0)
 
   return z.object({
-    tenantId: s("tenantId", "Tenant is required"),
-    planId: s("planId", "Plan is required"),
-    status: required("status") ? subscriptionStatusEnum : subscriptionStatusEnum.or(z.literal("") as any),
-    startDate: s("startDate", "Start date is required"),
+    // Always required: core foreign keys for a subscription.
+    // These should not be controlled by the settings matrix because the underlying model requires them.
+    tenantId: z.string().min(1, "Tenant is required"),
+    planId: z.string().min(1, "Plan is required"),
+    // Always required: subscription always needs a valid status & start date.
+    status: subscriptionStatusEnum,
+    startDate: z.string().min(1, "Start date is required"),
     endDate: z.string().optional(),
     currentPeriodStart: s("currentPeriodStart", "Current period start is required"),
     currentPeriodEnd: s("currentPeriodEnd", "Current period end is required"),
 
-    billingCurrency: s("billingCurrency", "Billing currency is required"),
-    unitPrice: n("unitPrice", "Unit price must be non-negative"),
+    // Always required: billing currency + unit price are required by the model.
+    billingCurrency: z.string().min(1, "Billing currency is required"),
+    unitPrice: z.number().min(0, "Unit price must be non-negative"),
     discountAmount: z.number().min(0, "Discount amount must be non-negative").default(0),
     discountPercent: z.number().min(0, "Discount percent must be non-negative").default(0),
     autoRenew: z.boolean().default(true),
