@@ -75,31 +75,38 @@ export function TenantsListPage() {
     {
       accessorKey: "tenantCode",
       header: "Tenant Code",
+      enableSorting: true,
     },
     {
       accessorKey: "shopNameEn",
       header: "Shop Name (EN)",
+      enableSorting: true,
     },
     {
       accessorKey: "shopNameAr",
       header: "Shop Name (AR)",
+      enableSorting: false,
     },
     {
       accessorKey: "contactPerson",
       header: "Contact Person",
+      enableSorting: false,
     },
     {
       accessorKey: "ownerEmail",
       header: "Owner Email",
+      enableSorting: false,
     },
     {
       accessorKey: "invoicePrefix",
       header: "Invoice Prefix",
+      enableSorting: false,
       cell: ({ row }) => row.original.invoicePrefix || "—",
     },
     {
       id: "logo",
       header: "Logo",
+      enableSorting: false,
       cell: ({ row }) =>
         row.original.logoUrl ? (
           <img
@@ -114,11 +121,13 @@ export function TenantsListPage() {
     {
       accessorKey: "subscriptionStatus",
       header: "Subscription Status",
+      enableSorting: false,
       cell: ({ row }) => <StatusBadge status={row.original.subscriptionStatus} />,
     },
     {
       id: "actions",
       header: "Actions",
+      enableSorting: false,
       cell: ({ row }) => {
         const tenant = row.original
         return (

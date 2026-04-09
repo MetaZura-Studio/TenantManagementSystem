@@ -15,6 +15,12 @@ export interface NavItem {
   href?: string
   icon: React.ComponentType<{ className?: string }>
   children?: NavItem[]
+  /**
+   * Paths (or path prefixes) that should NOT activate this nav item.
+   * Useful when a list route (e.g. `/tenants`) should be active for detail pages
+   * (e.g. `/tenants/[id]`) but NOT for a sibling "new" page (e.g. `/tenants/new`).
+   */
+  excludeActivePaths?: string[]
 }
 
 export const navItems: NavItem[] = [
@@ -27,7 +33,7 @@ export const navItems: NavItem[] = [
     title: "Tenant Management",
     icon: Building2,
     children: [
-      { title: "Tenants List", href: "/tenants", icon: Users },
+      { title: "Tenants List", href: "/tenants", icon: Users, excludeActivePaths: ["/tenants/new"] },
       { title: "Create Tenant", href: "/tenants/new", icon: Users },
       { title: "Branches", href: "/branches", icon: Building2 },
     ],

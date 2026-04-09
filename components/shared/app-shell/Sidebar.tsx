@@ -25,49 +25,77 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { logout } from "@/lib/auth/session"
 
-function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed?: boolean }) {
+function NavItemComponent({
+  item,
+  isCollapsed,
+  openGroupTitle,
+  setOpenGroupTitle,
+}: {
+  item: NavItem
+  isCollapsed?: boolean
+  openGroupTitle: string | null
+  setOpenGroupTitle: (title: string | null) => void
+}) {
   const pathname = usePathname()
+  const router = useRouter()
 
   const normalize = (p: string) => p.replace(/\/+$/, "") || "/"
-  const matchesHref = (href?: string) => {
+  const matchesHref = (nav?: Pick<NavItem, "href" | "excludeActivePaths">) => {
+    const href = nav?.href
     if (!href) return false
     const p = normalize(pathname)
     const h = normalize(href)
+    const excludes = (nav?.excludeActivePaths ?? []).map(normalize)
+
+    const isExcluded =
+      excludes.some((ex) => p === ex) || excludes.some((ex) => ex !== "/" && p.startsWith(`${ex}/`))
+
+    if (isExcluded) return false
     if (h === "/") return p === "/"
     return p === h || p.startsWith(`${h}/`)
   }
 
-  const hasActiveChild = item.children?.some((child) => matchesHref(child.href)) || false
-  const [isOpen, setIsOpen] = useState(
-    hasActiveChild
-  )
+  const hasActiveChild = item.children?.some((child) => matchesHref(child)) || false
+  const isOpen = openGroupTitle === item.title
+  const groupHighlighted = isOpen || hasActiveChild
 
-  const isActive = matchesHref(item.href) || hasActiveChild
+  const isActive = matchesHref(item) || hasActiveChild
 
   const IconTile = ({ children }: { children: ReactNode }) => (
     <div
       className={cn(
         "flex items-center justify-center rounded-2xl border border-border/25 bg-white/70 dark:bg-slate-950/55",
         isCollapsed ? "h-10 w-10" : "h-9 w-9",
-        isActive && "bg-primary/15 border-primary/25 shadow-sm"
+        (item.children ? groupHighlighted : isActive) && "bg-primary/15 border-primary/25 shadow-sm"
       )}
     >
       {children}
     </div>
   )
 
-  useEffect(() => {
-    if (hasActiveChild) setIsOpen(true)
-  }, [hasActiveChild])
-
   if (item.children) {
     return (
       <div>
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            if (isOpen) {
+              setOpenGroupTitle(null)
+              return
+            }
+
+            // Make the highlight predictable: when switching groups, navigate to the
+            // group's first child so only one parent is highlighted (route + UI agree).
+            const firstChildHref = item.children?.find((c) => c.href)?.href
+            const routeIsInThisGroup = hasActiveChild
+
+            setOpenGroupTitle(item.title)
+            if (!routeIsInThisGroup && firstChildHref) {
+              router.push(firstChildHref)
+            }
+          }}
           className={cn(
             "flex w-full items-center justify-between rounded-2xl text-[13px] font-medium transition-all duration-200 border border-transparent",
-            isActive && "bg-primary/10 text-primary border-primary/20",
+            groupHighlighted && "bg-primary/10 text-primary border-primary/20",
             isCollapsed
               ? "justify-center px-0 py-2.5 hover:bg-primary/5 dark:hover:bg-primary/10"
               : "px-3 py-2.5 hover:bg-primary/5 dark:hover:bg-primary/10 hover:border-primary/20 dark:hover:border-primary/20"
@@ -75,7 +103,7 @@ function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed?: 
         >
           <div className={cn("flex items-center", isCollapsed ? "justify-center w-full" : "space-x-3")}>
             <IconTile>
-              <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-primary")} />
+              <item.icon className={cn("h-5 w-5 flex-shrink-0", groupHighlighted && "text-primary")} />
             </IconTile>
             {!isCollapsed ? <span className="truncate">{item.title}</span> : null}
           </div>
@@ -90,11 +118,12 @@ function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed?: 
         {isOpen && !isCollapsed && (
           <div className="ml-4 mt-1 space-y-1 pl-2 border-l border-border/20">
             {item.children.map((child) => {
-              const childIsActive = matchesHref(child.href)
+              const childIsActive = matchesHref(child)
               return (
                 <Link
                   key={child.href}
                   href={child.href!}
+                  onClick={() => setOpenGroupTitle(item.title)}
                   className={cn(
                     "flex items-center space-x-3 rounded-2xl px-3 py-2 text-[13px] transition-all duration-200 border border-transparent hover:bg-primary/5 dark:hover:bg-primary/10 hover:border-primary/20 dark:hover:border-primary/20",
                     childIsActive && "bg-primary/10 text-primary font-medium border-primary/20"
@@ -145,6 +174,27 @@ export function Sidebar() {
   const router = useRouter()
   const { session } = useSession()
   const [logoError, setLogoError] = useState(false)
+  const pathname = usePathname()
+  const [openGroupTitle, setOpenGroupTitle] = useState<string | null>(null)
+
+  const normalize = (p: string) => p.replace(/\/+$/, "") || "/"
+  const matchesNavHref = (href?: string, excludeActivePaths?: string[]) => {
+    if (!href) return false
+    const p = normalize(pathname)
+    const h = normalize(href)
+    const excludes = (excludeActivePaths ?? []).map(normalize)
+    const isExcluded = excludes.some((ex) => p === ex) || excludes.some((ex) => ex !== "/" && p.startsWith(`${ex}/`))
+    if (isExcluded) return false
+    if (h === "/") return p === "/"
+    return p === h || p.startsWith(`${h}/`)
+  }
+
+  useEffect(() => {
+    // If the current route belongs to a group, keep that group open/highlighted.
+    const activeGroup =
+      navItems.find((it) => it.children?.some((c) => matchesNavHref(c.href, c.excludeActivePaths))) ?? null
+    setOpenGroupTitle(activeGroup?.title ?? null)
+  }, [pathname])
 
   async function onLogout() {
     await logout()
@@ -207,7 +257,13 @@ export function Sidebar() {
           )}
           <nav className="space-y-1">
             {navItems.map((item) => (
-              <NavItemComponent key={item.title} item={item} isCollapsed={isCollapsed} />
+              <NavItemComponent
+                key={item.title}
+                item={item}
+                isCollapsed={isCollapsed}
+                openGroupTitle={openGroupTitle}
+                setOpenGroupTitle={setOpenGroupTitle}
+              />
             ))}
           </nav>
         </div>
