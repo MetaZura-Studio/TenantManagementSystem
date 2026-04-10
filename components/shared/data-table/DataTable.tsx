@@ -59,10 +59,6 @@ export function DataTable<TData, TValue>({
   search,
   sort,
 }: DataTableProps<TData, TValue>) {
-  if (loading) {
-    return <TableSkeleton rows={loadingRows ?? 8} cols={loadingCols ?? Math.min(6, columns.length || 6)} />
-  }
-
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
 
@@ -113,6 +109,10 @@ export function DataTable<TData, TValue>({
       : activeColState === "asc"
       ? false
       : !!currentSort?.desc
+
+  if (loading) {
+    return <TableSkeleton rows={loadingRows ?? 8} cols={loadingCols ?? Math.min(6, columns.length || 6)} />
+  }
 
   return (
     <div className="space-y-4">

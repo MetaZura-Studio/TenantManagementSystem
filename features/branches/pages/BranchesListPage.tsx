@@ -51,7 +51,7 @@ export function BranchesListPage() {
   const filteredBranches = branches.filter((branch) => {
     if (
       filters.branchName &&
-      !matchesSearch([branch.nameEn, branch.nameAr, branch.phone, branch.email, branch.city], filters.branchName)
+      !matchesSearch([branch.nameEn, branch.nameAr, branch.phone, branch.city], filters.branchName)
     ) {
       return false
     }
