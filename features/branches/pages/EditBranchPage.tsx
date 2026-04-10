@@ -153,7 +153,11 @@ export function EditBranchPage({ branchId }: EditBranchPageProps) {
                   render={({ field }) => (
                     <FormItem>
                       <RequiredLabel>Tenant</RequiredLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        key={`${tenants.length}-${field.value || ""}`}
+                        onValueChange={field.onChange}
+                        value={field.value ?? ""}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select tenant" />

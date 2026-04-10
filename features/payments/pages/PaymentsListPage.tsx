@@ -12,6 +12,7 @@ import type { Payment } from "../types"
 import { ColumnDef } from "@tanstack/react-table"
 import { Eye, Printer, Download } from "lucide-react"
 import Link from "next/link"
+import { formatDateYmd } from "@/lib/text/dates"
 
 export function PaymentsListPage() {
   const router = useRouter()
@@ -227,7 +228,7 @@ export function PaymentsListPage() {
       header: "Payment Date",
       cell: ({ row }) => {
         const payment = row.original
-        return payment.transactionDate || "-"
+        return payment.transactionDate ? formatDateYmd(payment.transactionDate) : "-"
       },
     },
     {
@@ -281,33 +282,28 @@ export function PaymentsListPage() {
         breadcrumbs={[{ label: "Payments" }]}
       />
 
-      {isLoading ? (
-        <GlassCard variant="subtle">
-          <GlassCardContent className="p-12">
-            <div className="text-center text-muted-foreground">Loading...</div>
-          </GlassCardContent>
-        </GlassCard>
-      ) : (
-        <GlassCard variant="default">
-          <GlassCardContent className="p-0">
-            <DataTable
-              columns={columns}
-              data={payments}
-              search={{ columnId: "paymentCode", placeholder: "Search payments..." }}
-              sort={{
-                options: [
-                  { label: "Payment Date", columnId: "transactionDate" },
-                  { label: "Amount", columnId: "amount" },
-                  { label: "Status", columnId: "status" },
-                  { label: "Payment ID", columnId: "paymentCode" },
-                ],
-                defaultColumnId: "transactionDate",
-                defaultDirection: "desc",
-              }}
-            />
-          </GlassCardContent>
-        </GlassCard>
-      )}
+      <GlassCard variant="default">
+        <GlassCardContent className="p-0">
+          <DataTable
+            loading={isLoading}
+            loadingRows={8}
+            loadingCols={8}
+            columns={columns}
+            data={payments}
+            search={{ columnId: "paymentCode", placeholder: "Search payments..." }}
+            sort={{
+              options: [
+                { label: "Payment Date", columnId: "transactionDate" },
+                { label: "Amount", columnId: "amount" },
+                { label: "Status", columnId: "status" },
+                { label: "Payment ID", columnId: "paymentCode" },
+              ],
+              defaultColumnId: "transactionDate",
+              defaultDirection: "desc",
+            }}
+          />
+        </GlassCardContent>
+      </GlassCard>
     </>
   )
 }

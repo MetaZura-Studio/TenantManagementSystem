@@ -26,7 +26,17 @@ export async function POST(req: Request) {
 
   const created = await createPayment(body)
   if (created && typeof created === "object" && "error" in created) {
-    return jsonError(404, "NOT_FOUND", "Invoice not found")
+    if (created.error === "INVOICE_NOT_FOUND") {
+      return jsonError(404, "NOT_FOUND", "Invoice not found")
+    }
+    if (created.error === "OVERPAYMENT") {
+      return jsonError(
+        400,
+        "BAD_REQUEST",
+        `Payment amount exceeds remaining due. Remaining due: ${created.remaining.toFixed(2)}`
+      )
+    }
+    return jsonError(400, "BAD_REQUEST", "Failed to create payment")
   }
   return jsonOk(created, { status: 201 })
 }

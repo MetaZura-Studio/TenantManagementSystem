@@ -14,6 +14,7 @@ import {
 import { DataTable } from "@/components/shared/data-table"
 import { StatusBadge } from "@/components/shared/badges"
 import { ConfirmDialog } from "@/components/shared/feedback"
+import { TableSkeleton } from "@/components/shared/feedback/TableSkeleton"
 import { GlassCard, GlassCardContent } from "@/components/shared/cards"
 import { PageHeader } from "@/components/shared/page-header"
 import { toast } from "@/components/shared/feedback/use-toast"
@@ -22,6 +23,7 @@ import type { Tenant } from "../types"
 import { ColumnDef } from "@tanstack/react-table"
 import { Eye, Pencil, Trash2, Plus, GitBranch } from "lucide-react"
 import Link from "next/link"
+import { matchesSearch } from "@/lib/text/search"
 
 export function TenantsListPage() {
   const router = useRouter()
@@ -35,11 +37,31 @@ export function TenantsListPage() {
   const { data: tenants = [], isLoading } = useTenants()
   const deleteMutation = useDeleteTenant()
 
+  const normalizeStatus = (s: string) => s.trim().toUpperCase()
+
   const filteredTenants = tenants.filter((tenant) => {
-    if (filters.tenantName && !tenant.shopNameEn.toLowerCase().includes(filters.tenantName.toLowerCase())) {
+    if (
+      filters.tenantName &&
+      !matchesSearch(
+        [
+          tenant.shopNameEn,
+          tenant.shopNameAr,
+          tenant.tenantCode,
+          tenant.slug,
+          tenant.ownerName,
+          tenant.ownerEmail,
+          tenant.ownerMobile,
+          tenant.contactPerson,
+        ],
+        filters.tenantName
+      )
+    ) {
       return false
     }
-    if (filters.subscriptionStatus !== "All" && tenant.subscriptionStatus !== filters.subscriptionStatus) {
+    if (
+      filters.subscriptionStatus !== "All" &&
+      normalizeStatus(tenant.subscriptionStatus) !== normalizeStatus(filters.subscriptionStatus)
+    ) {
       return false
     }
     return true
@@ -199,9 +221,11 @@ export function TenantsListPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Expired">Expired</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="TRIAL">Trial</SelectItem>
+                  <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  <SelectItem value="EXPIRED">Expired</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -211,8 +235,8 @@ export function TenantsListPage() {
 
       {isLoading ? (
         <GlassCard variant="subtle">
-          <GlassCardContent className="p-12">
-            <div className="text-center text-muted-foreground">Loading...</div>
+          <GlassCardContent className="p-0">
+            <TableSkeleton rows={8} cols={7} />
           </GlassCardContent>
         </GlassCard>
       ) : (

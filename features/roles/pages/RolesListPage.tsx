@@ -112,31 +112,26 @@ export function RolesListPage() {
         }
       />
 
-      {isLoading ? (
-        <GlassCard variant="subtle">
-          <GlassCardContent className="p-12">
-            <div className="text-center text-muted-foreground">Loading...</div>
-          </GlassCardContent>
-        </GlassCard>
-      ) : (
-        <GlassCard variant="default">
-          <GlassCardContent className="p-0">
-            <DataTable
-              columns={columns}
-              data={roles}
-              search={{ columnId: "roleName", placeholder: "Search roles..." }}
-              sort={{
-                options: [
-                  { label: "Role Name", columnId: "roleName" },
-                  { label: "Description", columnId: "description" },
-                ],
-                defaultColumnId: "roleName",
-                defaultDirection: "asc",
-              }}
-            />
-          </GlassCardContent>
-        </GlassCard>
-      )}
+      <GlassCard variant="default">
+        <GlassCardContent className="p-0">
+          <DataTable
+            loading={isLoading}
+            loadingRows={8}
+            loadingCols={3}
+            columns={columns}
+            data={roles}
+            search={{ columnId: "roleName", placeholder: "Search roles..." }}
+            sort={{
+              options: [
+                { label: "Role Name", columnId: "roleName" },
+                { label: "Description", columnId: "description" },
+              ],
+              defaultColumnId: "roleName",
+              defaultDirection: "asc",
+            }}
+          />
+        </GlassCardContent>
+      </GlassCard>
 
       <ConfirmDialog
         open={deleteDialogOpen}

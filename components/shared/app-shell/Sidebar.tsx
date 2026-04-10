@@ -30,11 +30,13 @@ function NavItemComponent({
   isCollapsed,
   openGroupTitle,
   setOpenGroupTitle,
+  onNavigate,
 }: {
   item: NavItem
   isCollapsed?: boolean
   openGroupTitle: string | null
   setOpenGroupTitle: (title: string | null) => void
+  onNavigate?: () => void
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -91,6 +93,7 @@ function NavItemComponent({
             setOpenGroupTitle(item.title)
             if (!routeIsInThisGroup && firstChildHref) {
               router.push(firstChildHref)
+              onNavigate?.()
             }
           }}
           className={cn(
@@ -123,7 +126,10 @@ function NavItemComponent({
                 <Link
                   key={child.href}
                   href={child.href!}
-                  onClick={() => setOpenGroupTitle(item.title)}
+                  onClick={() => {
+                    setOpenGroupTitle(item.title)
+                    onNavigate?.()
+                  }}
                   className={cn(
                     "flex items-center space-x-3 rounded-2xl px-3 py-2 text-[13px] transition-all duration-200 border border-transparent hover:bg-primary/5 dark:hover:bg-primary/10 hover:border-primary/20 dark:hover:border-primary/20",
                     childIsActive && "bg-primary/10 text-primary font-medium border-primary/20"
@@ -152,6 +158,7 @@ function NavItemComponent({
   return (
     <Link
       href={item.href!}
+      onClick={() => onNavigate?.()}
       className={cn(
         "relative group flex items-center rounded-2xl text-[13px] font-medium transition-all duration-200 border border-transparent hover:border-primary/20 dark:hover:border-primary/20",
         isCollapsed ? "justify-center px-0 py-2.5 hover:bg-primary/5 dark:hover:bg-primary/10" : "space-x-3 px-3 py-2.5 hover:bg-primary/5 dark:hover:bg-primary/10",
@@ -169,7 +176,15 @@ function NavItemComponent({
   )
 }
 
-export function Sidebar() {
+export function Sidebar({
+  variant = "desktop",
+  isOpen,
+  onClose,
+}: {
+  variant?: "desktop" | "mobile"
+  isOpen?: boolean
+  onClose?: () => void
+}) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const router = useRouter()
   const { session } = useSession()
@@ -210,47 +225,81 @@ export function Sidebar() {
         .join("")
     : "A"
 
+  const isMobile = variant === "mobile"
+  const show = isMobile ? !!isOpen : true
+  const effectiveCollapsed = isMobile ? false : isCollapsed
+
+  if (!show) return null
+
   return (
     <aside
-      style={{ width: isCollapsed ? 72 : 280 }}
-      className="relative z-10 flex h-full flex-col transition-all duration-300 flex-shrink-0 p-3"
+      style={{ width: effectiveCollapsed ? 72 : 280 }}
+      className={cn(
+        "relative z-10 flex h-full flex-col transition-all duration-300 flex-shrink-0 p-3",
+        isMobile && "fixed left-0 top-0 z-50"
+      )}
     >
+      {isMobile ? (
+        <button
+          type="button"
+          className="fixed inset-0 bg-black/30 backdrop-blur-[1px]"
+          aria-label="Close menu"
+          onClick={onClose}
+        />
+      ) : null}
       <div className="flex h-full flex-col rounded-3xl border border-border/25 bg-white/70 dark:bg-slate-950/65 backdrop-blur-xl shadow-sm overflow-hidden">
-        <div className="flex h-16 items-center justify-between px-5">
-          {!isCollapsed && (
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold overflow-hidden">
-                {!logoError ? (
-                  <Image
-                    src="/logo-mark.svg"
-                    alt="Logo"
-                    width={36}
-                    height={36}
-                    className="h-9 w-9 object-contain"
-                    onError={() => setLogoError(true)}
-                    priority
-                  />
-                ) : (
-                  initials
-                )}
-              </div>
-              <div className="leading-tight">
-                <div className="text-sm font-semibold">Dishdasha Management System</div>
-                <div className="text-[11px] text-muted-foreground">Admin Portal</div>
-              </div>
-            </div>
+        <div className="flex min-h-16 items-start justify-between px-5 py-3">
+          {!effectiveCollapsed && (
+            <Link
+              href="/dashboard"
+              className="flex items-start gap-3 rounded-2xl hover:bg-muted/40 transition-colors px-2 py-1"
+              aria-label="Go to dashboard"
+              onClick={() => onClose?.()}
+            >
+                <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold overflow-hidden">
+                  {!logoError ? (
+                    <Image
+                      src="/logo-mark.svg"
+                      alt="Logo"
+                      width={36}
+                      height={36}
+                      className="h-9 w-9 object-contain"
+                      onError={() => setLogoError(true)}
+                      priority
+                    />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                <div className="leading-snug max-w-[170px]">
+                  <div className="text-sm font-semibold leading-snug whitespace-normal break-words">
+                    Dishdasha Management System
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">Admin Portal</div>
+                </div>
+            </Link>
           )}
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-2xl hover:bg-muted/50 transition-colors bg-white/40 dark:bg-slate-950/30"
-            aria-label="Toggle sidebar"
-          >
-            {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
-          </button>
+          {isMobile ? (
+            <button
+              onClick={onClose}
+              className="p-2 rounded-2xl hover:bg-muted/50 transition-colors bg-white/40 dark:bg-slate-950/30"
+              aria-label="Close menu"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-2 rounded-2xl hover:bg-muted/50 transition-colors bg-white/40 dark:bg-slate-950/30"
+              aria-label="Toggle sidebar"
+            >
+              {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+            </button>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto px-3 pb-3">
-          {!isCollapsed && (
+          {!effectiveCollapsed && (
             <div className="px-2 pb-2 text-[11px] font-semibold text-muted-foreground/80">
               MENU
             </div>
@@ -260,9 +309,10 @@ export function Sidebar() {
               <NavItemComponent
                 key={item.title}
                 item={item}
-                isCollapsed={isCollapsed}
+                isCollapsed={effectiveCollapsed}
                 openGroupTitle={openGroupTitle}
                 setOpenGroupTitle={setOpenGroupTitle}
+                onNavigate={isMobile ? onClose : undefined}
               />
             ))}
           </nav>
@@ -275,21 +325,21 @@ export function Sidebar() {
                 type="button"
                 className={cn(
                   "rounded-2xl border border-border/20 bg-white/55 dark:bg-slate-950/60 px-3 py-3 flex items-center gap-3 w-full",
-                  isCollapsed && "justify-center flex-col gap-1 px-2 py-2"
+                  effectiveCollapsed && "justify-center flex-col gap-1 px-2 py-2"
                 )}
                 aria-label="Open account menu"
               >
                 <div
                   className={cn(
                     "h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold",
-                    isCollapsed && "h-11 w-11"
+                    effectiveCollapsed && "h-11 w-11"
                   )}
                   aria-hidden
                 >
                   {initials}
                 </div>
 
-                {!isCollapsed ? (
+                {!effectiveCollapsed ? (
                   <div className="min-w-0 flex-1 text-left">
                     <div className="text-sm font-semibold truncate">{session?.user?.name || "Admin User"}</div>
                     <div className="text-[11px] text-muted-foreground truncate">{session?.user?.email || "admin@example.com"}</div>

@@ -15,6 +15,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Pencil, Trash2, Plus, Eye, Printer } from "lucide-react"
 import Link from "next/link"
 import { useTenants } from "@/features/tenants/hooks"
+import { formatDateYmd } from "@/lib/text/dates"
 
 function toInvoiceLifecycleStatus(invoice: Invoice): string {
   const raw = String(invoice.status || "").toUpperCase()
@@ -93,10 +94,12 @@ export function InvoicesListPage() {
     {
       accessorKey: "issueDate",
       header: "Issue Date",
+      cell: ({ row }) => formatDateYmd(row.original.issueDate),
     },
     {
       accessorKey: "dueDate",
       header: "Due Date",
+      cell: ({ row }) => formatDateYmd(row.original.dueDate),
     },
     {
       accessorKey: "totalAmount",
@@ -165,33 +168,28 @@ export function InvoicesListPage() {
         }
       />
 
-      {isLoading ? (
-        <GlassCard variant="subtle">
-          <GlassCardContent className="p-12">
-            <div className="text-center text-muted-foreground">Loading...</div>
-          </GlassCardContent>
-        </GlassCard>
-      ) : (
-        <GlassCard variant="default">
-          <GlassCardContent className="p-0">
-            <DataTable
-              columns={columns}
-              data={invoices}
-              search={{ columnId: "invoiceCode", placeholder: "Search invoices..." }}
-              sort={{
-                options: [
-                  { label: "Issue Date", columnId: "issueDate" },
-                  { label: "Due Date", columnId: "dueDate" },
-                  { label: "Invoice Code", columnId: "invoiceCode" },
-                  { label: "Total Amount", columnId: "totalAmount" },
-                ],
-                defaultColumnId: "issueDate",
-                defaultDirection: "desc",
-              }}
-            />
-          </GlassCardContent>
-        </GlassCard>
-      )}
+      <GlassCard variant="default">
+        <GlassCardContent className="p-0">
+          <DataTable
+            loading={isLoading}
+            loadingRows={8}
+            loadingCols={8}
+            columns={columns}
+            data={invoices}
+            search={{ columnId: "invoiceCode", placeholder: "Search invoices..." }}
+            sort={{
+              options: [
+                { label: "Issue Date", columnId: "issueDate" },
+                { label: "Due Date", columnId: "dueDate" },
+                { label: "Invoice Code", columnId: "invoiceCode" },
+                { label: "Total Amount", columnId: "totalAmount" },
+              ],
+              defaultColumnId: "issueDate",
+              defaultDirection: "desc",
+            }}
+          />
+        </GlassCardContent>
+      </GlassCard>
 
       <ConfirmDialog
         open={deleteDialogOpen}

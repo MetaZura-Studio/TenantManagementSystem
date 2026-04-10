@@ -42,6 +42,7 @@ import { toast } from "@/components/shared/feedback/use-toast"
 import { useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/queryKeys"
 import { useTenants } from "@/features/tenants/hooks"
+import { formatDateYmd } from "@/lib/text/dates"
 
 interface InvoiceDetailPageProps {
   invoiceId: string
@@ -95,6 +96,16 @@ export function InvoiceDetailPage({ invoiceId }: InvoiceDetailPageProps) {
   }
 
   const submitRecordPayment = (data: z.infer<typeof recordPaymentSchema>) => {
+    const remaining = Number(invoice.amountDue ?? 0)
+    if (data.status === "SUCCESS" && Number(data.amount) > remaining + 1e-9) {
+      toast({
+        title: "Invalid amount",
+        description: `Payment cannot exceed remaining due (${remaining.toFixed(2)}).`,
+        variant: "destructive",
+      })
+      return
+    }
+
     const payload: Omit<Payment, "id" | "createdAt" | "updatedAt"> = {
       paymentCode: `PAY-${Date.now().toString().slice(-8)}`,
       paymentReference: data.paymentReference,
@@ -179,11 +190,11 @@ export function InvoiceDetailPage({ invoiceId }: InvoiceDetailPageProps) {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Issue Date</p>
-                <p className="text-lg font-medium">{invoice.issueDate}</p>
+                <p className="text-lg font-medium">{formatDateYmd(invoice.issueDate)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Due Date</p>
-                <p className="text-lg font-medium">{invoice.dueDate}</p>
+                <p className="text-lg font-medium">{formatDateYmd(invoice.dueDate)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Subtotal</p>

@@ -31,10 +31,14 @@ import {
 } from "@/components/ui/select"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { TableSkeleton } from "@/components/shared/feedback/TableSkeleton"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  loading?: boolean
+  loadingRows?: number
+  loadingCols?: number
   search?: {
     columnId: string
     placeholder?: string
@@ -49,9 +53,16 @@ interface DataTableProps<TData, TValue> {
 export function DataTable<TData, TValue>({
   columns,
   data,
+  loading,
+  loadingRows,
+  loadingCols,
   search,
   sort,
 }: DataTableProps<TData, TValue>) {
+  if (loading) {
+    return <TableSkeleton rows={loadingRows ?? 8} cols={loadingCols ?? Math.min(6, columns.length || 6)} />
+  }
+
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
 

@@ -149,32 +149,27 @@ export function UsersListPage() {
         }
       />
 
-      {isLoading ? (
-        <GlassCard variant="subtle">
-          <GlassCardContent className="p-12">
-            <div className="text-center text-muted-foreground">Loading...</div>
-          </GlassCardContent>
-        </GlassCard>
-      ) : (
-        <GlassCard variant="default">
-          <GlassCardContent className="p-0">
-            <DataTable
-              columns={columns}
-              data={users}
-              search={{ columnId: "username", placeholder: "Search users..." }}
-              sort={{
-                options: [
-                  { label: "Username", columnId: "username" },
-                  { label: "Email", columnId: "email" },
-                  { label: "Status", columnId: "status" },
-                ],
-                defaultColumnId: "username",
-                defaultDirection: "asc",
-              }}
-            />
-          </GlassCardContent>
-        </GlassCard>
-      )}
+      <GlassCard variant="default">
+        <GlassCardContent className="p-0">
+          <DataTable
+            loading={isLoading}
+            loadingRows={8}
+            loadingCols={8}
+            columns={columns}
+            data={users}
+            search={{ columnId: "username", placeholder: "Search users..." }}
+            sort={{
+              options: [
+                { label: "Username", columnId: "username" },
+                { label: "Email", columnId: "email" },
+                { label: "Status", columnId: "status" },
+              ],
+              defaultColumnId: "username",
+              defaultDirection: "asc",
+            }}
+          />
+        </GlassCardContent>
+      </GlassCard>
 
       <ConfirmDialog
         open={deleteDialogOpen}

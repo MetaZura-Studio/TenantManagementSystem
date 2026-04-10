@@ -78,7 +78,11 @@ export async function getPayment(paymentId: string) {
 
 export async function createPayment(
   data: Omit<Payment, "id" | "createdAt" | "updatedAt">
-): Promise<Payment | { error: "INVOICE_NOT_FOUND" }> {
+): Promise<
+  | Payment
+  | { error: "INVOICE_NOT_FOUND" }
+  | { error: "OVERPAYMENT"; remaining: number }
+> {
   const inv = await getInvoice(data.invoiceId)
   if (!inv) return { error: "INVOICE_NOT_FOUND" }
 
@@ -86,6 +90,22 @@ export async function createPayment(
   const invoiceId = toId(data.invoiceId)
   const subscriptionId = data.subscriptionId ? toId(data.subscriptionId) : null
   if (!tenantId || !invoiceId) return { error: "INVOICE_NOT_FOUND" }
+
+  // Prevent overpayment unless we explicitly support credit balance logic.
+  // Only SUCCESS payments affect the invoice totals, so enforce strictly for SUCCESS.
+  if (String(data.status || "").toUpperCase() === "SUCCESS") {
+    const agg = await prisma.payments.aggregate({
+      where: { invoice_id: invoiceId, status: "SUCCESS" },
+      _sum: { amount: true },
+    })
+    const alreadyPaid = Number((agg as any)?._sum?.amount ?? 0)
+    const invoiceTotal = Number(inv.totalAmount ?? 0)
+    const remaining = Math.max(0, invoiceTotal - Math.max(0, alreadyPaid))
+    const amt = Math.max(0, Number(data.amount ?? 0))
+    if (amt > remaining + 1e-9) {
+      return { error: "OVERPAYMENT", remaining }
+    }
+  }
 
   const now = new Date()
 
@@ -128,6 +148,32 @@ export async function updatePayment(paymentId: string, updates: Partial<Payment>
   if (!existing) return undefined
 
   const now = new Date()
+
+  // If we're making this payment SUCCESS or changing the amount, ensure we don't overpay.
+  const nextStatus = updates.status ?? existing.status
+  const nextAmount = updates.amount != null ? Number(updates.amount) : existing.amount
+  const affectsInvoice = String(nextStatus || "").toUpperCase() === "SUCCESS"
+
+  if (affectsInvoice && existing.invoiceId) {
+    const inv = await getInvoice(existing.invoiceId)
+    if (inv) {
+      const invId = toId(existing.invoiceId)
+      if (invId) {
+        const agg = await prisma.payments.aggregate({
+          where: { invoice_id: invId, status: "SUCCESS", id: { not: id } },
+          _sum: { amount: true },
+        })
+        const alreadyPaidExcludingThis = Number((agg as any)?._sum?.amount ?? 0)
+        const invoiceTotal = Number(inv.totalAmount ?? 0)
+        const remaining = Math.max(0, invoiceTotal - Math.max(0, alreadyPaidExcludingThis))
+        const amt = Math.max(0, Number(nextAmount ?? 0))
+        if (amt > remaining + 1e-9) {
+          // Signal in a stable way; API route will translate this to a 400.
+          throw new Error(`OVERPAYMENT: remaining=${remaining}`)
+        }
+      }
+    }
+  }
 
   const updatedRow = await prisma.payments.update({
     where: { id },

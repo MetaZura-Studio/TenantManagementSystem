@@ -3,7 +3,7 @@
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/shared/cards"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { ChevronRight, MoreHorizontal, Phone, Send } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 
 export function KpiNavCard({
@@ -30,13 +30,6 @@ export function KpiNavCard({
               <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
             ) : null}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-2xl bg-white/60 hover:bg-white/80 border border-border/20 transition-colors dark:bg-slate-950/45 dark:border-border/30 dark:hover:bg-slate-950/55"
-          >
-            <MoreHorizontal className="h-5 w-5" />
-          </Button>
         </div>
       </GlassCardHeader>
       <GlassCardContent className="pt-2">
@@ -121,9 +114,6 @@ export function DemographicCard({
             <GlassCardTitle className="text-lg">Demographic</GlassCardTitle>
             <p className="text-xs text-muted-foreground mt-1">Top tenant countries (live)</p>
           </div>
-          <Button variant="ghost" size="icon" className="rounded-2xl">
-            <MoreHorizontal className="h-5 w-5" />
-          </Button>
         </div>
       </GlassCardHeader>
       <GlassCardContent className="pt-2 space-y-4">
@@ -165,13 +155,6 @@ export function TopPlansCard({
             <GlassCardTitle className="text-lg">{title}</GlassCardTitle>
             {subtitle ? <p className="text-xs text-muted-foreground mt-1">{subtitle}</p> : null}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-2xl bg-white/60 hover:bg-white/80 border border-border/20 transition-colors dark:bg-slate-950/45 dark:border-border/30 dark:hover:bg-slate-950/55"
-          >
-            <MoreHorizontal className="h-5 w-5" />
-          </Button>
         </div>
       </GlassCardHeader>
       <GlassCardContent className="pt-2 space-y-3">
@@ -224,9 +207,6 @@ export function ChatRequestCard({
       <GlassCardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <GlassCardTitle className="text-lg">{title}</GlassCardTitle>
-          <Button variant="ghost" size="icon" className="rounded-2xl">
-            <MoreHorizontal className="h-5 w-5" />
-          </Button>
         </div>
       </GlassCardHeader>
       <GlassCardContent className="pt-2">
@@ -254,22 +234,6 @@ export function ChatRequestCard({
                   <div className="text-[11px] text-muted-foreground/80 mt-1">
                     {it.time}
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-2xl hover:bg-white/70 dark:hover:bg-slate-950/50"
-                  >
-                    <Phone className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-2xl hover:bg-white/70 dark:hover:bg-slate-950/50"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             ))

@@ -202,31 +202,26 @@ export function PlansListPage() {
         </GlassCardContent>
       </GlassCard>
 
-      {isLoading ? (
-        <GlassCard variant="subtle">
-          <GlassCardContent className="p-12">
-            <div className="text-center text-muted-foreground">Loading...</div>
-          </GlassCardContent>
-        </GlassCard>
-      ) : (
-        <GlassCard variant="default">
-          <GlassCardContent className="p-0">
-            <DataTable
-              columns={columns}
-              data={filteredPlans}
-              sort={{
-                options: [
-                  { label: "Plan Name", columnId: "nameEn" },
-                  { label: "Plan Code", columnId: "planCode" },
-                  { label: "Billing Cycle", columnId: "billingCycle" },
-                ],
-                defaultColumnId: "nameEn",
-                defaultDirection: "asc",
-              }}
-            />
-          </GlassCardContent>
-        </GlassCard>
-      )}
+      <GlassCard variant="default">
+        <GlassCardContent className="p-0">
+          <DataTable
+            loading={isLoading}
+            loadingRows={8}
+            loadingCols={6}
+            columns={columns}
+            data={filteredPlans}
+            sort={{
+              options: [
+                { label: "Plan Name", columnId: "nameEn" },
+                { label: "Plan Code", columnId: "planCode" },
+                { label: "Billing Cycle", columnId: "billingCycle" },
+              ],
+              defaultColumnId: "nameEn",
+              defaultDirection: "asc",
+            }}
+          />
+        </GlassCardContent>
+      </GlassCard>
 
       <ConfirmDialog
         open={deleteDialogOpen}

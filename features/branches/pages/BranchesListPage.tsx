@@ -23,6 +23,7 @@ import type { Branch } from "../types"
 import { ColumnDef } from "@tanstack/react-table"
 import { Pencil, Trash2, Plus } from "lucide-react"
 import Link from "next/link"
+import { matchesSearch } from "@/lib/text/search"
 
 export function BranchesListPage() {
   const router = useRouter()
@@ -48,7 +49,10 @@ export function BranchesListPage() {
   }, [tenantIdFromUrl])
 
   const filteredBranches = branches.filter((branch) => {
-    if (filters.branchName && !branch.nameEn.toLowerCase().includes(filters.branchName.toLowerCase())) {
+    if (
+      filters.branchName &&
+      !matchesSearch([branch.nameEn, branch.nameAr, branch.phone, branch.email, branch.city], filters.branchName)
+    ) {
       return false
     }
     if (filters.tenantId !== "All" && branch.tenantId !== filters.tenantId) {
@@ -220,31 +224,26 @@ export function BranchesListPage() {
         </GlassCardContent>
       </GlassCard>
 
-      {isLoading ? (
-        <GlassCard variant="subtle">
-          <GlassCardContent className="p-12">
-            <div className="text-center text-muted-foreground">Loading...</div>
-          </GlassCardContent>
-        </GlassCard>
-      ) : (
-        <GlassCard variant="default">
-          <GlassCardContent className="p-0">
-            <DataTable
-              columns={columns}
-              data={filteredBranches}
-              sort={{
-                options: [
-                  { label: "Branch Name", columnId: "nameEn" },
-                  { label: "City", columnId: "city" },
-                  { label: "Status", columnId: "status" },
-                ],
-                defaultColumnId: "nameEn",
-                defaultDirection: "asc",
-              }}
-            />
-          </GlassCardContent>
-        </GlassCard>
-      )}
+      <GlassCard variant="default">
+        <GlassCardContent className="p-0">
+          <DataTable
+            loading={isLoading}
+            loadingRows={8}
+            loadingCols={6}
+            columns={columns}
+            data={filteredBranches}
+            sort={{
+              options: [
+                { label: "Branch Name", columnId: "nameEn" },
+                { label: "City", columnId: "city" },
+                { label: "Status", columnId: "status" },
+              ],
+              defaultColumnId: "nameEn",
+              defaultDirection: "asc",
+            }}
+          />
+        </GlassCardContent>
+      </GlassCard>
 
       <ConfirmDialog
         open={deleteDialogOpen}

@@ -16,6 +16,7 @@ import {
 import { toast } from "@/components/shared/feedback/use-toast"
 import { ArrowLeft } from "lucide-react"
 import { useState } from "react"
+import { formatDateYmd } from "@/lib/text/dates"
 
 interface PaymentDetailPageProps {
   paymentId: string
@@ -106,7 +107,7 @@ export function PaymentDetailPage({ paymentId }: PaymentDetailPageProps) {
               {payment.transactionDate && (
                 <div>
                   <p className="text-sm text-muted-foreground">Paid At</p>
-                  <p className="text-lg font-medium">{payment.transactionDate}</p>
+                  <p className="text-lg font-medium">{formatDateYmd(payment.transactionDate)}</p>
                 </div>
               )}
               {payment.paymentGatewayRef && (

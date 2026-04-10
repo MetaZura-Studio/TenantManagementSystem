@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { useSubscription } from "../hooks"
 import { Pencil, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { formatDateYmd } from "@/lib/text/dates"
 
 interface SubscriptionDetailPageProps {
   subscriptionId: string
@@ -68,11 +69,11 @@ export function SubscriptionDetailPage({ subscriptionId }: SubscriptionDetailPag
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Start Date</p>
-                <p className="text-lg font-medium">{subscription.startDate}</p>
+                <p className="text-lg font-medium">{formatDateYmd(subscription.startDate)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Current Period End</p>
-                <p className="text-lg font-medium">{subscription.currentPeriodEnd}</p>
+                <p className="text-lg font-medium">{formatDateYmd(subscription.currentPeriodEnd)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Unit Price</p>

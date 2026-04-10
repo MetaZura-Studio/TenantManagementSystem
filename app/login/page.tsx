@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,13 +14,17 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<"idle" | "submitting" | "redirecting">("idle")
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    router.prefetch(next)
+  }, [router, next])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    setLoading(true)
+    setStatus("submitting")
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -30,17 +34,25 @@ export default function LoginPage() {
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as any
         setError(data?.error?.message || "Login failed")
+        setStatus("idle")
         return
       }
-      // Populate client-side session so existing synchronous permission checks
-      // (used in some pages) can start enforcing.
-      const session = await fetchSession()
-      setClientSession(session)
+      // Immediately show "redirecting" feedback and navigate.
+      // Keep client-session hydration non-blocking to avoid a perceived pause.
+      setStatus("redirecting")
       router.replace(next)
+      fetchSession()
+        .then((session) => setClientSession(session))
+        .catch(() => {
+          // ignore: dashboard/server routes rely on httpOnly cookie anyway
+        })
     } finally {
-      setLoading(false)
+      // Intentionally do not set status back to idle on success.
+      // If navigation fails, user can refresh and retry.
     }
   }
+
+  const isBusy = status !== "idle"
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#eef6ff] via-[#f7fbff] to-[#eaf2ff] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-50">
@@ -110,6 +122,7 @@ export default function LoginPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       autoComplete="email"
                       placeholder="Enter your email"
+                      disabled={isBusy}
                       className="h-12 border-0 bg-transparent text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-400/60 focus-visible:ring-0"
                     />
                   </div>
@@ -124,6 +137,7 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       autoComplete="current-password"
                       placeholder="Enter your password"
+                      disabled={isBusy}
                       className="h-12 border-0 bg-transparent text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-400/60 focus-visible:ring-0"
                     />
                   </div>
@@ -138,10 +152,23 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   className="w-full h-12 rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 text-white hover:from-blue-500 hover:to-blue-700 shadow-lg shadow-blue-600/20 active:scale-[0.99]"
-                  disabled={loading}
+                  disabled={isBusy}
                 >
-                  {loading ? "Signing in..." : "Sign in"}
+                  {isBusy ? (
+                    <span className="inline-flex items-center justify-center">
+                      <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white" />
+                      {status === "redirecting" ? "Redirecting..." : "Signing in..."}
+                    </span>
+                  ) : (
+                    "Sign in"
+                  )}
                 </Button>
+
+                {status === "redirecting" ? (
+                  <div className="text-xs text-slate-500 dark:text-slate-300/60 text-center">
+                    Opening your dashboard…
+                  </div>
+                ) : null}
 
                 <div className="pt-2 text-xs text-slate-500 dark:text-slate-300/60 text-center">
                   By signing in, you agree to our Terms & Service.

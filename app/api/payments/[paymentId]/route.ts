@@ -29,7 +29,23 @@ export async function PATCH(
     return jsonError(400, "BAD_REQUEST", "Invalid JSON body")
   }
 
-  const updated = await updatePayment(params.paymentId, updates)
+  let updated: Payment | undefined
+  try {
+    updated = await updatePayment(params.paymentId, updates)
+  } catch (err: any) {
+    const msg = String(err?.message ?? "")
+    if (msg.startsWith("OVERPAYMENT:")) {
+      const remainingStr = msg.split("remaining=")[1] ?? ""
+      const remaining = Number.parseFloat(remainingStr)
+      const pretty = Number.isFinite(remaining) ? remaining.toFixed(2) : "0.00"
+      return jsonError(
+        400,
+        "BAD_REQUEST",
+        `Payment amount exceeds remaining due. Remaining due: ${pretty}`
+      )
+    }
+    return jsonError(400, "BAD_REQUEST", err?.message ?? "Failed to update payment")
+  }
   if (!updated) return jsonError(404, "NOT_FOUND", "Payment not found")
   return jsonOk(updated)
 }

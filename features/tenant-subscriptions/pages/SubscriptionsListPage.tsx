@@ -165,34 +165,29 @@ export function SubscriptionsListPage() {
         }
       />
 
-      {isLoading ? (
-        <GlassCard variant="subtle">
-          <GlassCardContent className="p-12">
-            <div className="text-center text-muted-foreground">Loading...</div>
-          </GlassCardContent>
-        </GlassCard>
-      ) : (
-        <GlassCard variant="default">
-          <GlassCardContent className="p-0">
-            <DataTable
-              columns={columns}
-              data={subscriptions}
-              search={{ columnId: "subscriptionId", placeholder: "Search subscriptions..." }}
-              sort={{
-                options: [
-                  { label: "Tenant", columnId: "tenant" },
-                  { label: "Start Date", columnId: "startDate" },
-                  { label: "Period End", columnId: "currentPeriodEnd" },
-                  { label: "Status", columnId: "status" },
-                  { label: "Subscription ID", columnId: "subscriptionId" },
-                ],
-                defaultColumnId: "startDate",
-                defaultDirection: "desc",
-              }}
-            />
-          </GlassCardContent>
-        </GlassCard>
-      )}
+      <GlassCard variant="default">
+        <GlassCardContent className="p-0">
+          <DataTable
+            loading={isLoading}
+            loadingRows={8}
+            loadingCols={7}
+            columns={columns}
+            data={subscriptions}
+            search={{ columnId: "subscriptionId", placeholder: "Search subscriptions..." }}
+            sort={{
+              options: [
+                { label: "Tenant", columnId: "tenant" },
+                { label: "Start Date", columnId: "startDate" },
+                { label: "Period End", columnId: "currentPeriodEnd" },
+                { label: "Status", columnId: "status" },
+                { label: "Subscription ID", columnId: "subscriptionId" },
+              ],
+              defaultColumnId: "startDate",
+              defaultDirection: "desc",
+            }}
+          />
+        </GlassCardContent>
+      </GlassCard>
 
       <ConfirmDialog
         open={deleteDialogOpen}

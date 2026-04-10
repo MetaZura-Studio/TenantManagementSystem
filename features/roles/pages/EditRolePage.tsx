@@ -46,6 +46,16 @@ export function EditRolePage({ roleId }: EditRolePageProps) {
   const { session, loading: sessionLoading } = useSession()
   const canUpdate = hasPermissionForSession(session, PERMISSIONS.ROLES.UPDATE)
 
+  const normalizeRoleStatus = (raw: unknown): "Active" | "Inactive" => {
+    const s = String(raw ?? "").trim().toLowerCase()
+    if (s === "active" || s === "1" || s === "true") return "Active"
+    if (s === "inactive" || s === "0" || s === "false") return "Inactive"
+    // Handle enum-ish inputs if they ever appear
+    if (s === "enabled") return "Active"
+    if (s === "disabled") return "Inactive"
+    return "Active"
+  }
+
   // Merge existing permissions with all modules
   const getPermissions = () => {
     if (!role) return MODULES.map((module) => ({ module, view: false, create: false, edit: false, delete: false, print: false }))
@@ -63,7 +73,7 @@ export function EditRolePage({ roleId }: EditRolePageProps) {
       ? {
           roleName: role.roleName,
           description: role.description || "",
-          status: role.status,
+          status: normalizeRoleStatus(role.status),
           permissions: getPermissions(),
         }
       : undefined,
@@ -155,7 +165,11 @@ export function EditRolePage({ roleId }: EditRolePageProps) {
                   render={({ field }) => (
                     <FormItem>
                       <RequiredLabel>Status</RequiredLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        key={`role-status-${role?.id ?? ""}-${field.value ?? ""}`}
+                        onValueChange={field.onChange}
+                        value={field.value ?? ""}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select status" />

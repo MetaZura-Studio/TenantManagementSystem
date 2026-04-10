@@ -166,32 +166,27 @@ export function CurrencyListPage() {
         }
       />
 
-      {isLoading ? (
-        <GlassCard variant="subtle">
-          <GlassCardContent className="p-12">
-            <div className="text-center text-muted-foreground">Loading...</div>
-          </GlassCardContent>
-        </GlassCard>
-      ) : (
-        <GlassCard variant="default">
-          <GlassCardContent className="p-0">
-            <DataTable
-              columns={columns}
-              data={currencies}
-              search={{ columnId: "currencyCode", placeholder: "Search currencies..." }}
-              sort={{
-                options: [
-                  { label: "Currency Code", columnId: "currencyCode" },
-                  { label: "Currency Name", columnId: "currencyName" },
-                  { label: "Exchange Rate", columnId: "exchangeRate" },
-                ],
-                defaultColumnId: "currencyCode",
-                defaultDirection: "asc",
-              }}
-            />
-          </GlassCardContent>
-        </GlassCard>
-      )}
+      <GlassCard variant="default">
+        <GlassCardContent className="p-0">
+          <DataTable
+            loading={isLoading}
+            loadingRows={10}
+            loadingCols={4}
+            columns={columns}
+            data={currencies}
+            search={{ columnId: "currencyCode", placeholder: "Search currencies..." }}
+            sort={{
+              options: [
+                { label: "Currency Code", columnId: "currencyCode" },
+                { label: "Currency Name", columnId: "currencyName" },
+                { label: "Exchange Rate", columnId: "exchangeRate" },
+              ],
+              defaultColumnId: "currencyCode",
+              defaultDirection: "asc",
+            }}
+          />
+        </GlassCardContent>
+      </GlassCard>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
