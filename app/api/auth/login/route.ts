@@ -6,6 +6,8 @@ import {
 import { jsonError, jsonOk } from "@/app/api/_platform/http"
 import { prisma } from "@/lib/server/prisma"
 
+export const runtime = "nodejs"
+
 type LoginBody = {
   email?: string
   password?: string

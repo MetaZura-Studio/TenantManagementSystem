@@ -26,11 +26,16 @@ export default function LoginPage() {
     setError(null)
     setStatus("submitting")
     try {
+      const controller = new AbortController()
+      const t = window.setTimeout(() => controller.abort(), 15000)
+
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       })
+      window.clearTimeout(t)
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as any
         setError(data?.error?.message || "Login failed")
@@ -46,6 +51,13 @@ export default function LoginPage() {
         .catch(() => {
           // ignore: dashboard/server routes rely on httpOnly cookie anyway
         })
+    } catch (err: any) {
+      const msg =
+        err?.name === "AbortError"
+          ? "Login is taking too long. Please try again."
+          : err?.message || "Login failed"
+      setError(msg)
+      setStatus("idle")
     } finally {
       // Intentionally do not set status back to idle on success.
       // If navigation fails, user can refresh and retry.
