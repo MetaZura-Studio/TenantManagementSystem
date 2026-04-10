@@ -43,13 +43,16 @@ export default function LoginPage() {
         return
       }
       // Immediately show "redirecting" feedback and navigate.
-      // Keep client-session hydration non-blocking to avoid a perceived pause.
+      // Use a hard navigation to avoid a race where Set-Cookie hasn't been
+      // applied yet, causing middleware to bounce back to /login.
       setStatus("redirecting")
-      router.replace(next)
       fetchSession()
         .then((session) => setClientSession(session))
         .catch(() => {
           // ignore: dashboard/server routes rely on httpOnly cookie anyway
+        })
+        .finally(() => {
+          window.location.assign(next)
         })
     } catch (err: any) {
       const msg =
